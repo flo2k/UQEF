@@ -1,12 +1,8 @@
-abc
 argparse
 chaospy
 dill
 enum
-glob
-itertools
 joblib
-json
 matplotlib
 more_itertools
 mpi4py
@@ -15,7 +11,6 @@ numpy
 scipy
 setuptools
 tabulate
-time
 
 pytest
 pytest-runner

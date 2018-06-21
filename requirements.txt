@@ -1,12 +1,9 @@
-abc
 argparse
 chaospy
 dill
 enum
-glob
-itertools
+itertool
 joblib
-json
 matplotlib
 more_itertools
 mpi4py
@@ -15,5 +12,4 @@ numpy
 scipy
 setuptools
 tabulate
-time
 

@@ -13,7 +13,7 @@ setup(
     packages=find_packages("src"),
     package_dir={"": "src"},
     install_requires=[
-        "abc", "argparse", "chaospy", "dill", "enum", "glob", "itertools", "joblib", "json", "matplotlib", "more_itertools", "mpi4py", "multiprocessing", "numpy", "scipy", "setuptools", "tabulate", "time"
+        "argparse", "chaospy", "dill", "enum", "joblib", "matplotlib", "more_itertools", "mpi4py", "multiprocessing", "numpy", "scipy", "setuptools", "tabulate"
     ],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
