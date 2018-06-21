@@ -21,7 +21,7 @@ class LinearSolver(Solver):
     """
 
     def __init__(self, modelGenerator, normaliseParams=False):
-        LinearSolver.__init__(self)
+        Solver.__init__(self)
 
         # behavior
         self.modelGenerator = modelGenerator
@@ -44,7 +44,8 @@ class LinearSolver(Solver):
         self.parameters = parameters
         self.infoModel.prepare()
         
-    def solve(self, runtime_estimator, chunksize):
+    def solve(self, runtime_estimator=None, chunksize=1,
+              type=schedule.Type.WORK_LIST, algorithm=schedule.Algorithm.FCFS, strategy=schedule.Strategy.FIXED_LINEAR):
         work_parameters = self.parameters
         # assert
         self._assertParameters(work_parameters)
@@ -78,8 +79,8 @@ class LinearSolver(Solver):
         # calc timing
         solver_time = solver_time_end - solver_time_start
 
-        print("solver_time: {}".format(solver_time))
-        print("solver_time2: {}".format(solver_time2))
+        #print("solver_time: {}".format(solver_time))
+        #print("solver_time2: {}".format(solver_time2))
         solver_time = solver_time2
 
         self.solverTimes.T_i_S = np.array(results)
@@ -113,3 +114,6 @@ class LinearSolver(Solver):
             norm_paras.append(norm_para)
 
         return np.array(norm_paras)
+
+    def estimate_TProp(self, runtime_estimator=None, chunksize=1):
+        pass

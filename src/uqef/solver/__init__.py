@@ -11,7 +11,7 @@ from .Solver import Solver
 from .LinearSolver import LinearSolver
 from .ParallelSolver import ParallelSolver
 from .MpiPoolSolver import MpiPoolSolver
-from .MpiPoolSolverOld import MpiPoolSolverOld
+from .MpiSolverOld import MpiSolverOld
 
 # solver times
 from .SolverTimes import *

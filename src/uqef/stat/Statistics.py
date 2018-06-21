@@ -28,7 +28,7 @@ class Statistics(object):
 
     def calcStatisticsForSc(self, rawSamples, timestamps,
                             simulationNodes, order, solverTimes,
-                            work_package_indexes, original_runtime_estimator):
+                            work_package_indexes, original_runtime_estimator=None):
         pass
 
     def printResults(self, timestep=-1):

@@ -1,5 +1,5 @@
 """
-MpiPoolSolverOld uses traditional MPI mechanism (scatter/gather) to distribute the work and collect the results. It also
+MpiSolverOld uses traditional MPI mechanism (scatter/gather) to distribute the work and collect the results. It also
 supports a hybrid approach with combined thread parallelisation.
 
 @author: Florian Kuenzner
@@ -41,7 +41,7 @@ def _parallelSolve(modelGenerator, i_s, p_s):
     return result
 
 
-class MpiPoolSolverOld(Solver):
+class MpiSolverOld(Solver):
     """
     MpiPoolSolverOld solves the work packages in parallel using a MPI
     """
@@ -82,7 +82,8 @@ class MpiPoolSolverOld(Solver):
         self.parameters = parameters
         self.infoModel.prepare()
 
-    def solve(self, runtime_estimator, chunksize, type, algorithm, strategy):
+    def solve(self, runtime_estimator=None, chunksize=1,
+              type=schedule.Type.WORK_LIST, algorithm=schedule.Algorithm.FCFS, strategy=schedule.Strategy.FIXED_LINEAR):
         if self.rank == 0:
             work_parameters = self.parameters
             # assert

@@ -7,6 +7,7 @@ VoI - Value of Interest. Mathematically: the identity!
 
 from .Model import Model
 
+import numpy as np
 import time
 
 
@@ -30,9 +31,12 @@ class TestModel(Model):
         return parameter
 
     def run(self, i, parameter):
-        time.sleep(i)
         print("{}: paramater: {}".format(i, parameter))
-        return parameter
+
+        value_of_interest = np.sum(parameter)
+        #time.sleep(value_of_interest)
+
+        return [value_of_interest]
 
     def timesteps(self):
         return self.t

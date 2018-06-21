@@ -60,7 +60,8 @@ class ParallelSolver(Solver):
         self.parameters = parameters
         self.infoModel.prepare()
 
-    def solve(self, runtime_estimator, chunksize, type, algorithm, strategy):
+    def solve(self, runtime_estimator=None, chunksize=1,
+              type=schedule.Type.WORK_LIST, algorithm=schedule.Algorithm.FCFS, strategy=schedule.Strategy.FIXED_LINEAR):
         work_parameters = self.parameters
 
         # assert
