@@ -1,1 +1,7 @@
+# temp files
 *.pyc
+
+# temp folders
+build/
+dist/
+src/uqef.egg-info/
