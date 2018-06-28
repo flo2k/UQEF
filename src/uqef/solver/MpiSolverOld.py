@@ -100,7 +100,7 @@ class MpiSolverOld(Solver):
 
             # generate chunks and ensure to be able to restore the original order
             if strategy == schedule.Strategy.DYNAMIC:
-                raise NotImplementedError("Strategy.DYNAMIC not supported by MpiPoolSolverOld!")
+                raise NotImplementedError("Strategy.DYNAMIC not supported by MpiSolverOld!")
             elif strategy in [schedule.Strategy.FIXED_ALTERNATE, schedule.Strategy.FIXED_LINEAR]:
                 self.solverTimes.num_work_packages = len(self.work_package_indexes)
                 self.solverTimes.parallel_solvers_per_work_package = np.array([1] * self.size)

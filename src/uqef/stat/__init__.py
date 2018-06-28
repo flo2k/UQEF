@@ -5,3 +5,4 @@ Statistics package
 """
 
 from .Statistics import Statistics
+from .TestModelStatistics import TestModelStatistics

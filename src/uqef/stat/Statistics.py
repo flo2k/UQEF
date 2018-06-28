@@ -23,7 +23,9 @@ class Statistics(object):
         self.timesteps = np.array([])
         pass
         
-    def calcStatisticsForMc(self, rawSamples, timestamps, numEvaluations):
+    def calcStatisticsForMc(self, rawSamples, timesteps,
+                            simulationNodes, numEvaluations, solverTimes,
+                            work_package_indexes, original_runtime_estimator):
         pass
 
     def calcStatisticsForSc(self, rawSamples, timestamps,

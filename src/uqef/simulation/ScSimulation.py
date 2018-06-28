@@ -30,7 +30,7 @@ class ScSimulation(Simulation):
         self.nodes = nodes
         self.weights = weights
 
-    def calculateStatistics(self, statistics, simulationNodes, original_runtime_estimator):
+    def calculateStatistics(self, statistics, simulationNodes, original_runtime_estimator=None):
         model_results = self.solver.results
         timesteps = self.solver.timesteps
         solverTimes = self.solver.solverTimes

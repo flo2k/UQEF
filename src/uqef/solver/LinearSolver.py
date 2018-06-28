@@ -53,13 +53,37 @@ class LinearSolver(Solver):
         self._assertParameters(work_parameters)
 
         # sort work_parameters for optimal execution order
-        self.sorted_indexes, self.original_indexes = self.calcExecutionOrder(runtime_estimator)
-        work_parameters = self._sortParameters(work_parameters, self.sorted_indexes)
+        #self.sorted_indexes, self.original_indexes = self.calcExecutionOrder(runtime_estimator)
+        #work_parameters = self._sortParameters(work_parameters, self.sorted_indexes)
 
-        # split into chunks
-        i_s_chunk = list(more_itertools.chunked(range(0, len(work_parameters)), chunksize))
-        parmeterChunks = list(more_itertools.chunked(work_parameters, chunksize))
-        chunks = zip(i_s_chunk, parmeterChunks)
+        # estimate work runtime
+        estimated_runtimes = self._estimateWorkRuntime(work_parameters, runtime_estimator)
+
+        # generate work packages
+        self.work_package_indexes = schedule.generate_work_package(estimated_runtimes, 1, algorithm,
+                                                                   strategy)
+
+        # generate chunks and ensure to be able to restore the original order
+        if strategy in [schedule.Strategy.DYNAMIC, schedule.Strategy.FIXED_LINEAR]:
+            self.solverTimes.num_work_packages = len(self.work_package_indexes)
+            self.solverTimes.parallel_solvers_per_work_package = np.array([1])
+
+            sorted_indexes = schedule.generate_work_list_from_work_package(estimated_runtimes,
+                                                                           self.work_package_indexes)
+            work_parameters = self._sortParameters(work_parameters, sorted_indexes)
+
+            # split into chunks
+            i_s_chunk = list(more_itertools.chunked(sorted_indexes, chunksize))
+            parameterChunks = list(more_itertools.chunked(work_parameters, chunksize))
+            chunks = zip(i_s_chunk, parameterChunks)
+        elif strategy in [schedule.Strategy.FIXED_ALTERNATE]:
+            raise NotImplementedError("Strategy.FIXED_ALTERNATE not supported by LinearSolver!")
+
+        sorted_indexes = []
+        for i_s_c in i_s_chunk:
+            for i_s in i_s_c:
+                sorted_indexes.append(i_s)
+        original_indexes = sorted(range(len(sorted_indexes)), key=lambda k: sorted_indexes[k])
 
         # do the simulation
         solver_time_start = time.time()
@@ -84,20 +108,28 @@ class LinearSolver(Solver):
         solver_time = solver_time2
 
         self.solverTimes.T_i_S = np.array(results)
-        self.solverTimes.T_i_SWP_i_worker = np.zeros((1, len(self.solverTimes.T_i_S)))
-        self.solverTimes.T_i_SWP_i_worker[0] = self.solverTimes.T_i_S
-        self.solverTimes.T_i_SWP_worker = np.array([solver_time])
+        self.solverTimes.T_i_SWP_i_worker = []
+        for wp in self.work_package_indexes:
+            self.solverTimes.T_i_SWP_i_worker.append([self.solverTimes.T_i_S[wi] for wi in wp])
 
-        self.solverTimes.T_SWP_worker = self.solverTimes.T_i_SWP_worker.sum()
-        self.solverTimes.T_Prop = solver_time
+        self.solverTimes.T_i_SWP_worker = np.zeros(len(self.work_package_indexes))
+        for i in range(0, len(self.solverTimes.T_i_SWP_i_worker)):
+            self.solverTimes.T_i_SWP_worker[i] = np.sum(self.solverTimes.T_i_SWP_i_worker[i]) / \
+                                                 self.solverTimes.parallel_solvers_per_work_package[i]
+        self.solverTimes.T_SWP_worker = self.solverTimes.T_i_SWP_worker.max()
 
-        self.solverTimes.T_i_I = np.array(0)
-        self.solverTimes.T_I = self.solverTimes.T_Prop - self.solverTimes.T_i_S.sum()
+        self.solverTimes.T_S_overhead = float(0)
 
+        self.solverTimes.T_i_I = calc_idle_of_work_packages(self.solverTimes.T_i_SWP_worker)
+        self.solverTimes.T_I = self.solverTimes.T_i_I.max()
+
+        # self.solverTimes.T_C = solver_time - self.solverTimes.T_SWP_worker
         self.solverTimes.T_C = 0
 
+        self.solverTimes.T_Prop = self.solverTimes.T_SWP_worker + self.solverTimes.T_S_overhead + self.solverTimes.T_C
+
         # restore initial order
-        results = self._undoSortResults(results, self.original_indexes)
+        results = self._undoSortResults(results, original_indexes)
 
         # remember results
         self.results = results

@@ -38,7 +38,7 @@ class Simulation(object):
         self.solver.prepare(self.parameters)
 
     @abstractmethod
-    def calculateStatistics(self, statistics, simulationNodes):
+    def calculateStatistics(self, statistics, simulationNodes, original_runtime_estimator=None):
         raise NotImplementedError("Should have implemented this")
 
     def saveToFile(self, fileName):

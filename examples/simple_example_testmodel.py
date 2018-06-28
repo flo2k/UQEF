@@ -6,15 +6,10 @@ A simple example for the usage of the UQEF with a test model.
 
 # plotting
 import matplotlib
-
 matplotlib.use('Agg')
-from tabulate import tabulate
 
 # parsing args
 import argparse
-
-# uqef
-import uqef
 
 # for parallel computing
 import multiprocessing
@@ -27,12 +22,9 @@ import chaospy as cp
 import numpy as np
 import uqef
 
-# time measure
-import time
-
 # system stuff
 import os
-import copy
+
 
 #####################################
 ### MPI infos:
@@ -65,7 +57,7 @@ parser.add_argument('--mpi_chunksize', type=int, default=1)
 parser.add_argument('--uncertain', default='all')  # all, uncertain_param_1, uncertain_param_2
 parser.add_argument('--uq_method', default="sc")  # sc, mc
 parser.add_argument('--mc_numevaluations', type=int, default=27)
-parser.add_argument('--sc_q_order', type=int, default=1)  # number of collocation points in each direction (Q)
+parser.add_argument('--sc_q_order', type=int, default=2)  # number of collocation points in each direction (Q)
 parser.add_argument('--sc_p_order', type=int, default=1)  # number of terms in PCE (N)
 
 args = parser.parse_args()

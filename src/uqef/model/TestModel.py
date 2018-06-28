@@ -19,7 +19,7 @@ class TestModel(Model):
     def __init__(self):
         Model.__init__(self)
 
-        self.t = range(0, 5)
+        self.t = range(1, 2)
 
     def prepare(self):
         pass
@@ -31,7 +31,7 @@ class TestModel(Model):
         return parameter
 
     def run(self, i, parameter):
-        print("{}: paramater: {}".format(i, parameter))
+        #print("{}: paramater: {}".format(i, parameter))
 
         value_of_interest = np.sum(parameter)
         #time.sleep(value_of_interest)

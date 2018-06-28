@@ -25,9 +25,14 @@ class McSimulation(Simulation):
         nodes = nodes.T
         self.parameters = nodes
 
-    def calculateStatistics(self, statistics, simulationNodes):
+    def calculateStatistics(self, statistics, simulationNodes, original_runtime_estimator=None):
         model_results = self.solver.results
         timesteps = self.solver.timesteps
-        statistics.calcStatisticsForMc(model_results, timesteps, self.numEvaluations)
+        solverTimes = self.solver.solverTimes
+        self.original_runtime_estimator = original_runtime_estimator
+
+        statistics.calcStatisticsForMc(model_results, timesteps, simulationNodes, self.numEvaluations,
+                                       solverTimes,
+                                       self.solver.work_package_indexes, self.original_runtime_estimator)
         
         return statistics
