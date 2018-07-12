@@ -39,26 +39,26 @@ name = MPI.Get_processor_name()
 #####################################
 if rank == 0: print("parsing args...")
 parser = argparse.ArgumentParser(description='Uncertainty Quantification simulation.')
-parser.add_argument('--smoketest', action='store_true', default=False)
+parser.add_argument('--smoketest'             , action='store_true', default=False)
 
 parser.add_argument('-or','--outputResultDir' , default=".")
 
-parser.add_argument('--parallel', action='store_true', default=False)
-parser.add_argument('--num_cores', type=int, default=multiprocessing.cpu_count())
-parser.add_argument('--mpi', action='store_true')
-parser.add_argument('--mpi_method', default="new")  # new (MpiPoolSolver), old (MpiPoolSolverOld)
-parser.add_argument('--mpi_combined_parallel', action='store_true', default=False)
+parser.add_argument('--parallel'              , action='store_true', default=False)
+parser.add_argument('--num_cores'             , type=int, default=multiprocessing.cpu_count())
+parser.add_argument('--mpi'                   , action='store_true')
+parser.add_argument('--mpi_method'            , default="new")  # new (MpiPoolSolver), old (MpiPoolSolverOld)
+parser.add_argument('--mpi_combined_parallel' , action='store_true', default=False)
 
-parser.add_argument('--model', default="testmodel")
+parser.add_argument('--model'                 , default="testmodel")
 
-parser.add_argument('--chunksize', type=int, default=1)
-parser.add_argument('--mpi_chunksize', type=int, default=1)
+parser.add_argument('--chunksize'             , type=int, default=1)
+parser.add_argument('--mpi_chunksize'         , type=int, default=1)
 
-parser.add_argument('--uncertain', default='all')  # all, uncertain_param_1, uncertain_param_2
-parser.add_argument('--uq_method', default="sc")  # sc, mc
-parser.add_argument('--mc_numevaluations', type=int, default=27)
-parser.add_argument('--sc_q_order', type=int, default=2)  # number of collocation points in each direction (Q)
-parser.add_argument('--sc_p_order', type=int, default=1)  # number of terms in PCE (N)
+parser.add_argument('--uncertain'             , default='all')  # all, uncertain_param_1, uncertain_param_2
+parser.add_argument('--uq_method'             , default="sc")  # sc, mc
+parser.add_argument('--mc_numevaluations'     , type=int, default=27)
+parser.add_argument('--sc_q_order'            , type=int, default=2)  # number of collocation points in each direction (Q)
+parser.add_argument('--sc_p_order'            , type=int, default=1)  # number of terms in PCE (N)
 
 args = parser.parse_args()
 
