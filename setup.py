@@ -13,8 +13,20 @@ setup(
     packages=find_packages("src"),
     package_dir={"": "src"},
     install_requires=[
-        'argparse', 'chaospy', 'dill', 'joblib', 'matplotlib', 'more_itertools', 'mpi4py', 'numpy', 'scipy', 'setuptools', 'tabulate',
-        'enum;python_version<"3.0"', 'multiprocessing;python_version<"3.0"'
+        'argparse',
+        'chaospy',
+        'dill',
+        'enum;python_version<"3.0"',
+        'itertool;python_version<"3.0"',
+        'joblib',
+        'matplotlib',
+        'more_itertools',
+        'mpi4py',
+        'multiprocessing;python_version<"3.0"',
+        'numpy',
+        'scipy',
+        'setuptools',
+        'tabulate'
     ],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
