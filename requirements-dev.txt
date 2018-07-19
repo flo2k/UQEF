@@ -1,12 +1,13 @@
 argparse
 chaospy
 dill
-enum
+enum;python_version<"3.0"
+itertool;python_version<"3.0"
 joblib
 matplotlib
 more_itertools
 mpi4py
-multiprocessing
+multiprocessing;python_version<"3.0"
 numpy
 scipy
 setuptools
