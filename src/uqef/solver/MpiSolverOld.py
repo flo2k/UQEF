@@ -95,8 +95,8 @@ class MpiSolverOld(Solver):
             estimated_runtimes = self._estimateWorkRuntime(work_parameters, runtime_estimator)
 
             # generate work packages
-            self.work_package_indexes = schedule.generate_work_package(estimated_runtimes, self.size, algorithm,
-                                                                       strategy)
+            self.work_package_indexes = schedule.generate_work_package(estimated_runtimes, self.size,
+                                                                       algorithm, strategy)
 
             # generate chunks and ensure to be able to restore the original order
             if strategy == schedule.Strategy.DYNAMIC:
@@ -108,8 +108,7 @@ class MpiSolverOld(Solver):
                 i_s_chunk = self.work_package_indexes
                 parameterChunks = [work_parameters[i_s] for i_s in i_s_chunk]
                 chunks = zip(i_s_chunk, parameterChunks)
-                dataToSend = chunks
-                print(len(dataToSend))
+                dataToSend = list(chunks)
 
             sorted_indexes = []
             for i_s_c in i_s_chunk:
@@ -123,6 +122,7 @@ class MpiSolverOld(Solver):
 
         #scatter
         if self.rank == 0: scatter_time_start = time.time()
+        #if self.rank == 0: print("data to send: {}".format(dataToSend))
         data = MPI.COMM_WORLD.scatter(sendobj=dataToSend, root=0)
         if self.rank == 0: scatter_time_end = time.time()
 
@@ -135,7 +135,7 @@ class MpiSolverOld(Solver):
 
         #chunk_results = Parallel(n_jobs=self.numCores, verbose=5)(
         #    delayed(_parallelSolve)(self.modelGenerator, [i_s], [p_s]) for i_s, p_s in zip(i_s, nodes))
-        chunk_results = Parallel(n_jobs=self.numCores, verbose=5)(
+        chunk_results = Parallel(n_jobs=self.numCores, verbose=5, backend="threading")(
             delayed(_parallelSolve)(self.modelGenerator, [i_s], [p_s]) for i_s, p_s in zip(i_s, nodes))
 
         # gather
@@ -178,7 +178,7 @@ class MpiSolverOld(Solver):
                 self.solverTimes.T_i_SWP_i_worker.append([self.solverTimes.T_i_S[wi] for wi in wp])
 
             self.solverTimes.T_i_SWP_worker = np.zeros(len(self.work_package_indexes))
-            for i in range(0, len(self.solverTimes.T_i_SWP_i_worker)):
+            for i in range(0, len(self.solverTimes.T_i_SWP_worker)):
                 self.solverTimes.T_i_SWP_worker[i] = np.sum(self.solverTimes.T_i_SWP_i_worker[i]) / \
                                                      self.solverTimes.parallel_solvers_per_work_package[i]
             self.solverTimes.T_SWP_worker = self.solverTimes.T_i_SWP_worker.max()

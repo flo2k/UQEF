@@ -115,7 +115,8 @@ class MpiPoolSolver(Solver):
             estimated_runtimes = self._estimateWorkRuntime(work_parameters, runtime_estimator)
 
             # generate work packages
-            self.work_package_indexes = schedule.generate_work_package(estimated_runtimes, self.numCores, algorithm, strategy)
+            self.work_package_indexes = schedule.generate_work_package(estimated_runtimes, self.size,
+                                                                       algorithm, strategy)
 
             # generate chunks and ensure to be able to restore the original order
             if strategy == schedule.Strategy.DYNAMIC:
@@ -192,7 +193,6 @@ class MpiPoolSolver(Solver):
                 solver_time = solver_time_end - solver_time_start
                 # solver_time -= self.solverTimes.T_C
                 print("xx solver_time: {}".format(solver_time))
-
                 # solver times
                 self.solverTimes.T_i_S = np.array(results)
 
@@ -201,7 +201,7 @@ class MpiPoolSolver(Solver):
                     self.solverTimes.T_i_SWP_i_worker.append([self.solverTimes.T_i_S[wi] for wi in wp])
 
                 self.solverTimes.T_i_SWP_worker = np.zeros(len(self.work_package_indexes))
-                for i in range(0, len(self.solverTimes.T_i_SWP_i_worker)):
+                for i in range(0, len(self.solverTimes.T_i_SWP_worker)):
                     self.solverTimes.T_i_SWP_worker[i] = np.sum(self.solverTimes.T_i_SWP_i_worker[i]) / \
                                                          self.solverTimes.parallel_solvers_per_work_package[i]
                 self.solverTimes.T_SWP_worker = self.solverTimes.T_i_SWP_worker.max()
