@@ -6,5 +6,5 @@ build/
 dist/
 src/uqef.egg-info/
 
-#ide folders
-.idea
+#idea folders
+.idea/
