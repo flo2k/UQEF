@@ -107,7 +107,7 @@ class LinearSolver(Solver):
         #print("solver_time2: {}".format(solver_time2))
         solver_time = solver_time2
 
-        self.solverTimes.T_i_S = np.array(results)
+        self.solverTimes.T_i_S = np.zeros(len(results)) #TODO: separate QoI of runtimes!
         self.solverTimes.T_i_SWP_i_worker = []
         for wp in self.work_package_indexes:
             self.solverTimes.T_i_SWP_i_worker.append([self.solverTimes.T_i_S[wi] for wi in wp])
