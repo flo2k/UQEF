@@ -167,13 +167,16 @@ class MpiPoolSolver(Solver):
                 chunk_results = list(chunk_results_it)
 
                 results = []
+                runtimes = []
                 for chunk_result in chunk_results:
                     for result in chunk_result:
                         if self.combinedParallel:
                             for r in result:
-                                results.append(r)
+                                results.append(r[0])
+                                runtimes.append(r[1])
                         else:
-                            results.append(result)
+                            results.append(result[0])
+                            runtimes.append(result[1])
                 
 #                 for r in results:
 #                     print "result = " + str(r)
@@ -184,6 +187,7 @@ class MpiPoolSolver(Solver):
 
                 # restore initial order
                 results = self._undoSortResults(results, original_indexes)
+                runtimes = self._undoSortResults(runtimes, original_indexes)
 
                 self.results = results
                 #print "results: " + str(np.array(results, dtype=object).shape)
@@ -194,7 +198,7 @@ class MpiPoolSolver(Solver):
                 # solver_time -= self.solverTimes.T_C
                 print("xx solver_time: {}".format(solver_time))
                 # solver times
-                self.solverTimes.T_i_S = np.array(results)
+                self.solverTimes.T_i_S = np.array(runtimes)
 
                 self.solverTimes.T_i_SWP_i_worker = []
                 for wp in self.work_package_indexes:

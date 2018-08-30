@@ -147,13 +147,16 @@ class MpiSolverOld(Solver):
 
         if self.rank == 0:
             results = []
+            runtimes = []
             for chunk_result in chunk_results:
                 for result in chunk_result:
                     for r in result:
-                        results.append(r)
+                        results.append(r[0])
+                        runtimes.append(r[0])
 
             # restore initial order
             results = self._undoSortResults(results, original_indexes)
+            runtimes = self._undoSortResults(runtimes, original_indexes)
 
             # remember results
             self.results = results
@@ -171,7 +174,7 @@ class MpiSolverOld(Solver):
             #solver_time -= self.solverTimes.T_C
             print("xx solver_time: {}".format(solver_time))
 
-            self.solverTimes.T_i_S = np.array(results)
+            self.solverTimes.T_i_S = np.array(runtimes)
 
             self.solverTimes.T_i_SWP_i_worker = []
             for wp in self.work_package_indexes:

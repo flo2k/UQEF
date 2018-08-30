@@ -20,8 +20,8 @@ def _parallelSolve(modelGenerator, i_s, p_s):
     model = modelGenerator()
     model.prepare()
 
-    result = model.run(i_s, p_s)
-    return result
+    results = model.run(i_s, p_s)
+    return results
 
 
 def _parallelSolve_for_measure_overhead(i, sleep_time):
@@ -125,9 +125,11 @@ class ParallelSolver(Solver):
 
         # results
         results = []
+        runtimes = []
         for chunk_result in chunk_results:
             for result in chunk_result:
-                results.append(result)
+                results.append(result[0])
+                runtimes.append(result[1])
 
         # calc timing
         overhead_time = overhead_time_end - overhead_time_start #the overhead time is the time of overhead for joblib parallelisation
@@ -139,8 +141,9 @@ class ParallelSolver(Solver):
 
         # restore initial order
         results = self._undoSortResults(results, original_indexes)
+        runtimes = self._undoSortResults(runtimes, original_indexes)
 
-        self.solverTimes.T_i_S = np.array(results)
+        self.solverTimes.T_i_S = np.array(runtimes)
 
         self.solverTimes.T_i_SWP_i_worker = []
         for wp in self.work_package_indexes:

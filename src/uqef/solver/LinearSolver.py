@@ -89,6 +89,7 @@ class LinearSolver(Solver):
         solver_time_start = time.time()
         solver_time2 = 0.0
         results = []
+        runtimes = []
         for c in chunks:
             i_s, p_s = c
             solver_time_start2 = time.time()
@@ -96,7 +97,8 @@ class LinearSolver(Solver):
             solver_time_end2 = time.time()
             solver_time2 += (solver_time_end2 - solver_time_start2)
             for result in chunk_results:
-                results.append(result)
+                results.append(result[0])
+                runtimes.append(result[1])
 
         solver_time_end = time.time()
 
@@ -107,7 +109,11 @@ class LinearSolver(Solver):
         #print("solver_time2: {}".format(solver_time2))
         solver_time = solver_time2
 
-        self.solverTimes.T_i_S = np.zeros(len(results)) #TODO: separate QoI of runtimes!
+        # restore initial order
+        results = self._undoSortResults(results, original_indexes)
+        runtimes = self._undoSortResults(runtimes, original_indexes)
+
+        self.solverTimes.T_i_S = np.array(runtimes)
         self.solverTimes.T_i_SWP_i_worker = []
         for wp in self.work_package_indexes:
             self.solverTimes.T_i_SWP_i_worker.append([self.solverTimes.T_i_S[wi] for wi in wp])
@@ -128,8 +134,7 @@ class LinearSolver(Solver):
 
         self.solverTimes.T_Prop = self.solverTimes.T_SWP_worker + self.solverTimes.T_S_overhead + self.solverTimes.T_C
 
-        # restore initial order
-        results = self._undoSortResults(results, original_indexes)
+
 
         # remember results
         self.results = results

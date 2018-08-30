@@ -30,13 +30,27 @@ class TestModel(Model):
     def normaliseParameter(self, parameter):
         return parameter
 
-    def run(self, i, parameter):
-        #print("{}: paramater: {}".format(i, parameter))
+    def run(self, i_s, parameters):
+        results = []
+        for ip in range(0, len(i_s)):
+            i = i_s[ip]
+            parameter = parameters[ip]
+            #print("{}: paramater: {}".format(i, parameter))
 
-        value_of_interest = np.sum(parameter)
-        #time.sleep(value_of_interest)
+            start = time.time()
 
-        return [value_of_interest]
+            # calc value of interest
+            value_of_interest = np.sum(parameter)
+            #time.sleep(value_of_interest)
+
+            # measure runtime
+            end = time.time()
+            runtime = end - start
+
+            # collect the output
+            results.append((value_of_interest, runtime))
+
+        return results
 
     def timesteps(self):
         return self.t
