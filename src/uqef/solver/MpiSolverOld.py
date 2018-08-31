@@ -152,7 +152,7 @@ class MpiSolverOld(Solver):
                 for result in chunk_result:
                     for r in result:
                         results.append(r[0])
-                        runtimes.append(r[0])
+                        runtimes.append(r[1])
 
             # restore initial order
             results = self._undoSortResults(results, original_indexes)
