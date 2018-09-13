@@ -10,7 +10,7 @@ from tabulate import tabulate
 import matplotlib.pyplot as plotter
 import json
 import dill
-
+import psutil
 
 
 def restoreFromFile(statFileName):
@@ -113,9 +113,11 @@ class Nodes(object):
         
         if len(self.dists) > 0:
             self.joinedDists = cp.J(*orderdDists)
+            self.__save__cpu_affinity()
             self.distNodes, self.weights = cp.generate_quadrature(numCollocationPointsPerDim, 
                                                                   self.joinedDists, 
                                                                   rule=rule)
+            self.__restore__cpu_affinity()
         
         nodes = []
         if len(self.distNodes) == 0:
@@ -135,7 +137,17 @@ class Nodes(object):
         self.nodes = np.array(nodes)
         self.weights = np.array(self.weights)
         return self.nodes, self.weights
-    
+
+    def __save__cpu_affinity(self):
+        # Save cpu pinning: This is necessary, because through chaospy.generate_quadrature() -> scipy.linalg.eig_banded
+        # the process is pinned to only one cpu (core)! That's why we have to save and reset it!!
+        # This happens on the LRZ MAC-Cluster (snb and ati nodes) and on the LRZ Linux Cluster (CoolMUC2) on rank 0!
+        self.cpu_affinity = psutil.Process().cpu_affinity()
+
+    def __restore__cpu_affinity(self):
+        if self.cpu_affinity != psutil.Process().cpu_affinity():
+            psutil.Process().cpu_affinity(self.cpu_affinity)
+
     def printNodesSetup(self):
         self.assertConfiguration()
 
@@ -173,9 +185,11 @@ class Nodes(object):
         numDists = len(dists)
         for distributionName in dists:
             #generate nodes and weights
+            self.__save__cpu_affinity()
             nodes, weights = cp.generate_quadrature(numCollocationPointsPerDim, 
                                                     dists[distributionName], 
                                                     rule=rule)
+            self.__restore__cpu_affinity()
             nodes=nodes[0]
              
             #plot quadrature nodes and weights
