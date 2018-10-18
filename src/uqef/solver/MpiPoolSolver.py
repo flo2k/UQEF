@@ -161,6 +161,11 @@ class MpiPoolSolver(Solver):
                     chunk_results_it = executor.map(_combinedParallelSolve, [self.modelGenerator] * len(i_s_chunk), i_s_chunk,
                                                     parameterChunks, [self.numCores]*len(i_s_chunk),
                                                     chunksize=self.mpi_chunksize, unordered=self.unordered)
+
+                # print str(self.rank) + ": " + "waits for shutdown..."
+                executor.shutdown(wait=True)
+                # print str(self.rank) + ": " + "shutted down"
+
                 solver_time_end = time.time()
 
                 #print "chunk_results: " + str(chunk_results)
@@ -181,9 +186,7 @@ class MpiPoolSolver(Solver):
 #                 for r in results:
 #                     print "result = " + str(r)
                 
-                #print str(self.rank) + ": " + "waits for shutdown..."
-                executor.shutdown(wait=True)
-                #print str(self.rank) + ": " + "shutted down"
+
 
                 # restore initial order
                 results = self._undoSortResults(results, original_indexes)
