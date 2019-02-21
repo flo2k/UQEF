@@ -218,27 +218,31 @@ def LPT_alternating(T, m):
 
     P = [[] for _ in range(0, m)]
 
-    Direction = Enum('up', 'down')
-    mode = Direction.up
+    class Direction(Enum):
+        UP   = 1
+        DOWN = 2
 
-    # TODO: Makes LPT_alternating also thense with Strategy::DYNAMIC?
+    mode = Direction.UP
+
+    # TODO: Makes LPT_alternating also sense with Strategy::DYNAMIC?
     i = 0
     for j in T_decreasing:
         P[i].append(j)
 
         #index calc (up -> down -> up -> ...)
-        if mode == Direction.up:
-            i += 1;
+        if mode == Direction.UP:
+            i += 1
             if i >= m:
                 i -= 1
-                mode = Direction.down
-        elif mode == Direction.down:
-            i -= 1;
+                mode = Direction.DOWN
+        elif mode == Direction.DOWN:
+            i -= 1
             if i < 0:
                 i += 1
-                mode = Direction.up
+                mode = Direction.DOWN
 
     return P
+
 
 # TODO: remove the "__main__" function and write some UnitTests for it!
 if __name__ == "__main__":
@@ -249,13 +253,18 @@ if __name__ == "__main__":
     # work = np.array([0.6, 0.52, 0.51, 0.43, 0.40])
     #work = np.array([0.52, 0.6, 0.51, 0.43, 0.40])
     work = np.array([52, 60, 51, 43, 40])
+    #work = np.array([1.2, 1.9, 6.7, 3.5, 5.1, 2.2, 4.1, 8.5, 1.5])
 
     m = 3 #number of processors
     k = 100 #number of iterations to find near optimum
     s = Strategy.DYNAMIC
 
+    T_decreasing = np.asarray(sorted(range(len(work)), key=lambda k: work[k])[::-1])  # sort decreasing (from higher to lower)
+
     print("Work: {}".format(work))
     print("Total work length: {}".format(np.sum(work)))
+    print("Sorted LPT indizes: {}".format(T_decreasing))
+    print("Sorted LPT work: {}".format([work[i] for i in T_decreasing]))
     print("Processors: {}".format(m))
     print("Perfect work length: {}".format(np.sum(work)/m))
     print("")
@@ -272,6 +281,7 @@ if __name__ == "__main__":
     runtime = [np.sum(work[p]) for p in P]
     print("P runtimes: {}".format(runtime))
     print("Max runtime: {}".format(np.max(runtime)))
+    print("ratio: {}".format(np.max(runtime) / (np.sum(work) / m)))
     print("")
 
     ###################
@@ -286,6 +296,7 @@ if __name__ == "__main__":
     runtime = [np.sum(work[p]) for p in P]
     print("P runtimes: {}".format(runtime))
     print("Max runtime: {}".format(np.max(runtime)))
+    print("ratio: {}".format(np.max(runtime) / (np.sum(work) / m)))
     print("")
 
     ###################
@@ -300,6 +311,7 @@ if __name__ == "__main__":
     runtime = [np.sum(work[p]) for p in P]
     print("P runtimes: {}".format(runtime))
     print("Max runtime: {}".format(np.max(runtime)))
+    print("ratio: {}".format(np.max(runtime) / (np.sum(work) / m)))
     print("")
 
     ###################
@@ -314,12 +326,14 @@ if __name__ == "__main__":
     runtime = [np.sum(work[p]) for p in P]
     print("P runtimes: {}".format(runtime))
     print("Max runtime: {}".format(np.max(runtime)))
+    print("ratio: {}".format(np.max(runtime) / (np.sum(work) / m)))
     print("")
 
     ###################
     print("MULTIFIT:")
-    print("P: {}".format(P))
     P = MULTIFIT(work, m, k)
+
+    print("P: {}".format(P))
     for i in range(0, len(P)):
         print("P[{}]: {}".format(i, P[i]))
     print("R: {}".format([list(work[P[i]]) for i in range(len(P))]))
@@ -327,6 +341,7 @@ if __name__ == "__main__":
     runtime = [np.sum(work[p]) for p in P]
     print("P runtimes: {}".format(runtime))
     print("Max runtime: {}".format(np.max(runtime)))
+    print("ratio: {}".format(np.max(runtime)/(np.sum(work) / m)))
     print("")
 
 
