@@ -111,6 +111,9 @@ def FFD(T, C):
     """
     FFD - First fit decreasing algorithm: a heuristic for the bin-packing problem.
 
+    The worst case ratio is:
+     ** not known **
+
     :param T: is the actual work: T_i is one task (work) item
     :param C: is the bound (size of containers) to fit
     :return: P - the partitioned indices packages (work packages) (P contains only the indices, for T)
@@ -208,7 +211,7 @@ def LPT_alternating(T, m):
      -> Very similar to LPT, but it goes up and down when assigning the tasks to the containers (work packages)
 
     The worst case ratio is:
-     Rm(LPT) = 4/3 - 1/(3m)
+     ** not known **
 
     :param T: is the actual work: T_i is one task (work) item
     :param m: are the number of containers (processes or work packages)
