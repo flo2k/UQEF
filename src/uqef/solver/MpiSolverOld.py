@@ -70,7 +70,7 @@ class MpiSolverOld(Solver):
         self.solverTimes.parallel_solvers_per_work_package = np.array([self.numCores] * self.solverTimes.num_work_packages)
 
     def getSetup(self):
-        return "%s using %d num mpi processes (mpi_chunksize=%d)" % (type(self).__name__, self.size, self.mpi_chunksize)
+        return "%s using %d num mpi processes (mpi_chunksize=%d) with each %d cores" % (type(self).__name__, self.size, self.mpi_chunksize, self.numCores)
 
     def init(self):
         pass
@@ -133,10 +133,11 @@ class MpiSolverOld(Solver):
         print("number of nodes: {}".format(nodes.T.shape))
         #print "nodes: " + str(nodes.T)
 
-        #chunk_results = Parallel(n_jobs=self.numCores, verbose=5)(
-        #    delayed(_parallelSolve)(self.modelGenerator, [i_s], [p_s]) for i_s, p_s in zip(i_s, nodes))
-        chunk_results = Parallel(n_jobs=self.numCores, verbose=5, backend="threading")(
-            delayed(_parallelSolve)(self.modelGenerator, [i_s], [p_s]) for i_s, p_s in zip(i_s, nodes))
+        if self.combinedParallel:
+            chunk_results = Parallel(n_jobs=self.numCores, verbose=5, backend="threading")(
+                delayed(_parallelSolve)(self.modelGenerator, [i_s], [p_s]) for i_s, p_s in zip(i_s, nodes))
+        else:
+            chunk_results = [_parallelSolve(self.modelGenerator, [i_s], [p_s]) for i_s, p_s in zip(i_s, nodes)]
 
         # gather
         if self.rank == 0: gather_time_start = time.time()

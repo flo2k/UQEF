@@ -81,6 +81,9 @@ else:
 
 # cores
 num_cores = args.num_cores
+if args.mpi and args.mpi_combined_parallel is False:
+    num_cores = 1
+
 if mpi == False or (mpi == True and rank == 0):
     print("set num cores to: {}".format(num_cores))
 

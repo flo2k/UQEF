@@ -90,7 +90,7 @@ class MpiPoolSolver(Solver):
             self.parallel_solvers_per_work_package = np.ones(self.size)
         
     def getSetup(self):
-        return "%s using %d num mpi processes (mpi_chunksize=%d)" % (type(self).__name__, self.size, self.mpi_chunksize)
+        return "%s using %d num mpi processes (mpi_chunksize=%d) with each %d cores" % (type(self).__name__, self.size, self.mpi_chunksize, self.numCores)
         
     def init(self):
         pass
