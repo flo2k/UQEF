@@ -49,16 +49,30 @@ $python_cmd simple_example_testmodel.py \
 #                                    --uncertain "all" \
 #                                    --mpi
 
-# MpiSolverOld - SC
+# MpiSolverOld - SWP - SC
 #mpiexec -n 4 $python_cmd simple_example_testmodel.py \
 #                                    --model "testmodel" \
 #                                    --uq_method "sc" --sc_q_order 3 --sc_p_order 2 \
 #                                    --uncertain "all" \
 #                                    --mpi --mpi_method "old"
 
-# MpiSolverOld - MC
+# MpiSolverOld - SWP - MC
 #mpiexec -n 4 $python_cmd simple_example_testmodel.py \
 #                                    --model "testmodel" \
 #                                    --uq_method "mc" --mc_numevaluations 1000 \
 #                                    --uncertain "all" \
 #                                    --mpi --mpi_method "old"
+
+# MpiSolverOld - SWPT - SC
+#mpiexec -n 4 $python_cmd simple_example_testmodel.py \
+#                                    --model "testmodel" \
+#                                    --uq_method "sc" --sc_q_order 3 --sc_p_order 2 \
+#                                    --uncertain "all" \
+#                                    --mpi --mpi_method "old" --mpi_combined_parallel
+
+# MpiSolverOld - SWPT - MC
+#mpiexec -n 4 $python_cmd simple_example_testmodel.py \
+#                                    --model "testmodel" \
+#                                    --uq_method "mc" --mc_numevaluations 1000 \
+#                                    --uncertain "all" \
+#                                    --mpi --mpi_method "old" --mpi_combined_parallel
