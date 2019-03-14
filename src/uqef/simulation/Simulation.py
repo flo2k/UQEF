@@ -9,16 +9,15 @@ from abc import ABCMeta
 
 import dill
 
-
-def restoreFromFile(statFileName):
-    with open(statFileName, 'rb') as f:
-        return dill.load(f)
-
-
 class Simulation(object):
     """
     Abstract simulator interface
     """
+
+    @staticmethod
+    def restoreFromFile(fileName):
+        with open(fileName, 'rb') as f:
+            return dill.load(f)
 
     __metaclass__ = ABCMeta  # declare as abstract class
     

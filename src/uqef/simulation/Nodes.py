@@ -13,15 +13,15 @@ import dill
 import psutil
 
 
-def restoreFromFile(statFileName):
-    with open(statFileName, 'rb') as f:
-        return dill.load(f)
-
-
 class Nodes(object):
     """
     Nodes represents the nodes and parameters for a UQ simulation
     """
+
+    @staticmethod
+    def restoreFromFile(fileName):
+        with open(fileName, 'rb') as f:
+            return dill.load(f)
 
     def __init__(self, nodeNames):
         self.nodeNames = nodeNames

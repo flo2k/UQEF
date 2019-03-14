@@ -15,8 +15,8 @@ class Statistics(object):
     """
 
     @staticmethod
-    def restoreFromFile(statFileName):
-        with open(statFileName, 'rb') as f:
+    def restoreFromFile(fileName):
+        with open(fileName, 'rb') as f:
             return dill.load(f)
     
     def __init__(self):
