@@ -7,6 +7,7 @@ Abstract base class for statistics calculation
 import os
 import dill
 import numpy as np
+import sys
 
 
 class Statistics(object):
