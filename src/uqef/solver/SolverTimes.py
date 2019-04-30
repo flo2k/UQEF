@@ -32,6 +32,9 @@ class SolverTimes(object):
 
         #overhead of the solver
         self.T_S_overhead = float(0.0)
+        self.t_estimate_runtime = float(0.0)
+        self.t_wp_creation = float(0.0)
+        self.t_estimate_restore_order = float(0.0)
 
         #propagation
         self.T_Prop = float(0.0)
