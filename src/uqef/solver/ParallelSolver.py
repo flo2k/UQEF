@@ -73,8 +73,16 @@ class ParallelSolver(Solver):
         #self.sorted_indexes, self.original_indexes = self.calcExecutionOrder(runtime_estimator)
         #work_parameters = self._sortParameters(work_parameters, self.sorted_indexes)
 
+        t_estimate_runtime_start = time.time()
+
         # estimate work runtime
         estimated_runtimes = self._estimateWorkRuntime(work_parameters, runtime_estimator)
+
+        t_estimate_runtime_end = time.time()
+        t_estimate_runtime = t_estimate_runtime_end - t_estimate_runtime_start
+        print("t_estimate_runtime: {}".format(t_estimate_runtime))
+
+        t_wp_creation_start = time.time()
 
         # generate work packages
         self.work_package_indexes = schedule.generate_work_package(estimated_runtimes, self.numCores, algorithm, strategy)
@@ -108,6 +116,10 @@ class ParallelSolver(Solver):
                 sorted_indexes.append(i_s)
         original_indexes = sorted(range(len(sorted_indexes)), key=lambda k: sorted_indexes[k])
 
+        t_wp_creation_end = time.time()
+        t_wp_creation = t_wp_creation_end - t_wp_creation_start
+        print("t_wp_creation: {}".format(t_wp_creation))
+
         # init paralleliser
         paralleliser = Parallel(n_jobs=self.numCores, verbose=0, backend="threading")
 
@@ -139,9 +151,19 @@ class ParallelSolver(Solver):
         print("solver_time: {}".format(solver_time))
         print("overhead_time: {}".format(overhead_time))
 
+        t_estimate_restore_order_start = time.time()
+
         # restore initial order
         results = self._undoSortResults(results, original_indexes)
         runtimes = self._undoSortResults(runtimes, original_indexes)
+
+        t_estimate_restore_order_end = time.time()
+        t_estimate_restore_order = t_estimate_restore_order_end - t_estimate_restore_order_start
+        print("t_estimate_restore_order: {}".format(t_estimate_restore_order))
+
+        self.solverTimes.t_estimate_runtime = t_estimate_runtime
+        self.solverTimes.t_wp_creation = t_wp_creation
+        self.solverTimes.t_estimate_restore_order = t_estimate_restore_order
 
         self.solverTimes.T_i_S = np.array(runtimes)
 

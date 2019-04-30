@@ -91,8 +91,16 @@ class MpiSolverOld(Solver):
             work_parameters = self._normaliseParameters(work_parameters)
             self._assertParameters(work_parameters)
 
+            t_estimate_runtime_start = time.time()
+
             # estimate work runtime
             estimated_runtimes = self._estimateWorkRuntime(work_parameters, runtime_estimator)
+
+            t_estimate_runtime_end = time.time()
+            t_estimate_runtime = t_estimate_runtime_end - t_estimate_runtime_start
+            print("t_estimate_runtime: {}".format(t_estimate_runtime))
+
+            t_wp_creation_start = time.time()
 
             # generate work packages
             self.work_package_indexes = schedule.generate_work_package(estimated_runtimes, self.size,
@@ -115,6 +123,11 @@ class MpiSolverOld(Solver):
                 for i_s in i_s_c:
                     sorted_indexes.append(i_s)
             original_indexes = sorted(range(len(sorted_indexes)), key=lambda k: sorted_indexes[k])
+
+            t_wp_creation_end = time.time()
+            t_wp_creation = t_wp_creation_end - t_wp_creation_start
+            print("t_wp_creation: {}".format(t_wp_creation))
+
         else:
             dataToSend = None
 
@@ -155,9 +168,19 @@ class MpiSolverOld(Solver):
                         results.append(r[0])
                         runtimes.append(r[1])
 
+            t_estimate_restore_order_start = time.time()
+
             # restore initial order
             results = self._undoSortResults(results, original_indexes)
             runtimes = self._undoSortResults(runtimes, original_indexes)
+
+            t_estimate_restore_order_end = time.time()
+            t_estimate_restore_order = t_estimate_restore_order_end - t_estimate_restore_order_start
+            print("t_estimate_restore_order: {}".format(t_estimate_restore_order))
+
+            self.solverTimes.t_estimate_runtime = t_estimate_runtime
+            self.solverTimes.t_wp_creation = t_wp_creation
+            self.solverTimes.t_estimate_restore_order = t_estimate_restore_order
 
             # remember results
             self.results = results
