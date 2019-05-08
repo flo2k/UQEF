@@ -93,7 +93,7 @@ class Nodes(object):
         self.weights = np.array(self.weights) #MC has no weights, but after generation, we want a array
         return self.nodes
     
-    def generateNodesForSC(self, numCollocationPointsPerDim, rule="G"):
+    def generateNodesForSC(self, numCollocationPointsPerDim, rule="G", sparse=False):
 
         if self.numSamplesOrScDim == numCollocationPointsPerDim:
             return self.nodes, self.weights
@@ -116,7 +116,8 @@ class Nodes(object):
             self.__save__cpu_affinity()
             self.distNodes, self.weights = cp.generate_quadrature(numCollocationPointsPerDim, 
                                                                   self.joinedDists, 
-                                                                  rule=rule)
+                                                                  rule=rule,
+                                                                  sparse=sparse)
             self.__restore__cpu_affinity()
         
         nodes = []
@@ -172,7 +173,9 @@ class Nodes(object):
         for i in range(0, len(self.nodes)):
             resultTable.append(nodes[i])
 
-        return tabulate(resultTable, headers=self.nodeNames, floatfmt="f") + "\n"
+        str = tabulate(resultTable, headers=self.nodeNames, floatfmt="f") + "\n"
+        str += "\n" + "{} black-box models runs required".format(len(nodes))
+        return str
     
     def plotDistsSetup(self, fileName, numCollocationPointsPerDim, rule="G", show=False):
         

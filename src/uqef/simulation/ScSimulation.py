@@ -12,18 +12,19 @@ class ScSimulation(Simulation):
     ScSimulation does a stochastic collocation simulation
     """
 
-    def __init__(self, solver, q_order, p_order, rule="G", *args, **kwargs):
+    def __init__(self, solver, q_order, p_order, rule="G", sparse_quadrature=False, *args, **kwargs):
         Simulation.__init__(self, "sc", solver, *args, **kwargs)
 
         self.q_order = q_order
         self.p_order = p_order
         self.rule = rule
+        self.sparse_quadrature = sparse_quadrature
 
     def getSetup(self):
         return "%s using q_order=%d and p_order=%d" % (type(self).__name__, self.q_order, self.p_order)
 
     def generateSimulationNodes(self, simulationNodes):
-        nodes, weights = simulationNodes.generateNodesForSC(self.q_order, rule=self.rule)
+        nodes, weights = simulationNodes.generateNodesForSC(self.q_order, rule=self.rule, sparse=self.sparse_quadrature)
         nodes = nodes.T
         
         self.parameters = nodes
