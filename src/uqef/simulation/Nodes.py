@@ -114,9 +114,11 @@ class Nodes(object):
         if len(self.dists) > 0:
             self.joinedDists = cp.J(*orderdDists)
             self.__save__cpu_affinity()
+            growth = True if (rule == "c" and sparse == False) else False  # according to: https://github.com/jonathf/chaospy/issues/139
             self.distNodes, self.weights = cp.generate_quadrature(numCollocationPointsPerDim, 
                                                                   self.joinedDists, 
                                                                   rule=rule,
+                                                                  growth=growth,
                                                                   sparse=sparse)
             self.__restore__cpu_affinity()
         

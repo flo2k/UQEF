@@ -60,6 +60,7 @@ parser.add_argument('--mc_numevaluations'     , type=int, default=27)
 parser.add_argument('--sc_q_order'            , type=int, default=2)  # number of collocation points in each direction (Q)
 parser.add_argument('--sc_p_order'            , type=int, default=1)  # number of terms in PCE (N)
 parser.add_argument('--sc_sparse_quadrature'  , action='store_true', default=False)
+parser.add_argument('--sc_quadrature_rule'    , default='g')
 
 args = parser.parse_args()
 
@@ -168,7 +169,7 @@ if mpi == False or (mpi == True and rank == 0):
 if mpi == False or (mpi == True and rank == 0):
     simulations = {
         "mc": (lambda: uqef.simulation.McSimulation(solver, args.mc_numevaluations))
-       ,"sc": (lambda: uqef.simulation.ScSimulation(solver, args.sc_q_order, args.sc_p_order, "G", args.sc_sparse_quadrature))
+       ,"sc": (lambda: uqef.simulation.ScSimulation(solver, args.sc_q_order, args.sc_p_order, args.sc_quadrature_rule, args.sc_sparse_quadrature))
     }
     simulation = simulations[args.uq_method]()
 
