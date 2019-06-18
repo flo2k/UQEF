@@ -70,8 +70,8 @@ class Nodes(object):
                 orderdDistsNames.append(nameOfNode)
         
         if len(self.dists) > 0:
-            joinedDists = cp.J(*orderdDists)
-            distNodes = joinedDists.sample(numSamples)
+            self.joinedDists = cp.J(*orderdDists)
+            distNodes = self.joinedDists.sample(numSamples)
             self.distNodes = distNodes
         
         nodes = []
