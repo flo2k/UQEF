@@ -10,4 +10,4 @@ from . import nodes
 from . import model
 from . import simulation
 from . import stat
-from . import UQsim
+from .UQsim import UQsim
