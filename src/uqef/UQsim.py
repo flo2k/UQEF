@@ -11,8 +11,13 @@ from mpi4py import MPI
 
 import uqef
 
+#time measure
+import time
+import datetime
+
 # system stuff
 import os
+import sys
 
 #####################################
 ### MPI infos:
@@ -21,15 +26,17 @@ import os
 size = MPI.COMM_WORLD.Get_size()
 rank = MPI.COMM_WORLD.Get_rank()
 name = MPI.Get_processor_name()
+version = MPI.Get_library_version()
+version2 = MPI.Get_version()
 
-model = ""
+if rank == 0: print("MPI version: {}".format(version))
+if rank == 0: print("MPI2 version: {}".format(version2))
+if rank == 0: print("MPI3 version: {}".format(MPI.VERSION))
 
+print("rank {}: starttime: {}".format(rank, datetime.datetime.now().strftime('%Y.%m.%d %H:%M:%S')))
 
-def modelGenerator():
-    models = {
-        "testmodel": (lambda: uqef.model.TestModel())
-    }
-    return models[model]()
+def model_generator():
+    return model_generator.model()
 
 
 class UQsim(object):
@@ -41,6 +48,19 @@ class UQsim(object):
             "testmodel": (lambda: uqef.model.TestModel())
         }
 
+        self.statistics = {
+            "testmodel": (lambda: self.simulation.calculateStatistics(uqef.stat.TestModelStatistics(), self.simulationNodes)),
+            "runtime": (lambda: self.simulation.calculateStatistics(uqef.stat.RuntimeStatistics(), self.simulationNodes))
+        }
+
+        self.args = None
+        self.simulationNodes = None
+        self.simulation = None
+        self.runtime_estimator = None
+        self.solver = None
+        self.statistic = None
+        self.runtime_statistic = None
+
     def __del__(self):
         if self.args.mpi is True:
             print("rank: {} exit".format(rank))
@@ -51,36 +71,39 @@ class UQsim(object):
 
         self.parser = argparse.ArgumentParser(description='Uncertainty Quantification simulation.')
 
-        self.parser.add_argument('--smoketest', action='store_true', default=False)
+        self.parser.add_argument('--smoketest'                 , action='store_true', default=False)
 
-        self.parser.add_argument('-or', '--outputResultDir', default=".")
+        self.parser.add_argument('-im', '--inputModelDir'      , default=".")
+        self.parser.add_argument('-om', '--outputModelDir'     , default=".")
+        self.parser.add_argument('-or', '--outputResultDir'    , default=".")
 
-        self.parser.add_argument('--parallel', action='store_true', default=False)
-        self.parser.add_argument('--num_cores', type=int, default=multiprocessing.cpu_count())
-        self.parser.add_argument('--mpi', action='store_true')
-        self.parser.add_argument('--mpi_method', default="new")  # new (MpiPoolSolver), old (MpiPoolSolverOld)
-        self.parser.add_argument('--mpi_combined_parallel', action='store_true', default=False)
+        self.parser.add_argument('--parallel'                  , action='store_true', default=False)
+        self.parser.add_argument('--num_cores'                 , type=int, default=multiprocessing.cpu_count())
+        self.parser.add_argument('--mpi'                       , action='store_true')
+        self.parser.add_argument('--mpi_method'                , default="new")  # new (MpiPoolSolver), old (MpiPoolSolverOld)
+        self.parser.add_argument('--mpi_combined_parallel'     , action='store_true', default=False)
 
-        self.parser.add_argument('--model', default="testmodel")
+        self.parser.add_argument('--model'                     , default="testmodel")
+        self.parser.add_argument('--model_variant'             , type=int, default=1)
 
-        self.parser.add_argument('--chunksize', type=int, default=1)
-        self.parser.add_argument('--mpi_chunksize', type=int, default=1)
+        self.parser.add_argument('--chunksize'                 , type=int, default=1)
+        self.parser.add_argument('--mpi_chunksize'             , type=int, default=1)
 
-        self.parser.add_argument('--uncertain', default='all')  # all, uncertain_param_1, uncertain_param_2
-        self.parser.add_argument('--uq_method', default="sc")  # sc, mc
-        self.parser.add_argument('--mc_numevaluations', type=int, default=27)
-        self.parser.add_argument('--sc_q_order', type=int, default=2)  # number of collocation points in each direction (Q)
-        self.parser.add_argument('--sc_p_order', type=int, default=1)  # number of terms in PCE (N)
-        self.parser.add_argument('--sc_sparse_quadrature', action='store_true', default=False)
-        self.parser.add_argument('--sc_quadrature_rule', default='g')
+        self.parser.add_argument('--uncertain'                 , default='all')  # all, uncertain_param_1, uncertain_param_2
+        self.parser.add_argument('--uq_method'                 , default="sc")  # sc, mc
+        self.parser.add_argument('--mc_numevaluations'         , type=int, default=27)
+        self.parser.add_argument('--sc_q_order'                , type=int, default=2)  # number of collocation points in each direction (Q)
+        self.parser.add_argument('--sc_p_order'                , type=int, default=1)  # number of terms in PCE (N)
+        self.parser.add_argument('--sc_sparse_quadrature'      , action='store_true', default=False)
+        self.parser.add_argument('--sc_quadrature_rule'        , default='g')
 
-        #####################################
-        ### smoke test:
-        #####################################
-
-        if self.args.smoketest is True:
-            print("smoke test passed: exit!")
-            exit(0)
+        self.parser.add_argument('--analyse_runtime'           , action='store_true', default=True)
+        self.parser.add_argument('--opt_runtime'               , action='store_true', default=False)
+        self.parser.add_argument('--opt_runtime_gpce_Dir'      , default=".")
+        self.parser.add_argument('--opt_type'                  , default="WORK_PACKAGE")    # WORK_LIST WORK_PACKAGE
+        self.parser.add_argument('--opt_algorithm'             , default="LPT")             # FCFS LPT SPT MULTIFIT
+        self.parser.add_argument('--opt_strategy'              , default="DYNAMIC")         # FIXED_ALTERNATE FIXED_LINEAR DYNAMIC
+        self.parser.add_argument('--simulate_wait'             , action='store_true', default=False)
 
     def is_master(self):
         return self.args.mpi is False or (self.args.mpi is True and rank == 0)
@@ -88,10 +111,20 @@ class UQsim(object):
     def parse_args(self):
         self.args = self.parser.parse_args()
 
+        # smoke test
+        if self.args.smoketest is True:
+            print("smoke test passed: exit!")
+            exit(0)
+
+    def setup(self):
+        self.setup_path()
+        self.setup_model()
+        self.setup_parallelisation()
+        self.setup_solver()
+        self.setup_simulation()
+        self.setup_runtime_estimator()
+
     def setup_path(self):
-        #####################################
-        ### path settings:
-        #####################################
         if rank == 0:
             print("path settings...")
 
@@ -101,11 +134,8 @@ class UQsim(object):
             print("outputResultDir: {}".format(self.args.outputResultDir))
 
     def setup_parallelisation(self):
-        #####################################
-        ### parallelisation setup:
-        #####################################
         # cores
-        if self.args.mpi and self.args.mpi_combined_parallel is False:
+        if self.args.mpi is True and self.args.mpi_combined_parallel is False:
             self.args.num_cores = 1
 
         if self.is_master():
@@ -115,29 +145,25 @@ class UQsim(object):
         self.simulationNodes = uqef.nodes.Nodes(nodeNames)
 
     def setup_model(self):
-        global model
-        model = self.args.model
+        model_generator.model = self.models[self.args.model]
 
-    def initialise_solver(self):
+    def setup_solver(self):
         if self.args.mpi is True:
             if self.args.mpi_method == "new":
-                self.solver = uqef.solver.MpiPoolSolver(modelGenerator, mpi_chunksize=self.args.mpi_chunksize,
-                                                   combinedParallel=self.args.mpi_combined_parallel, num_cores=self.args.num_cores)
+                self.solver = uqef.solver.MpiPoolSolver(model_generator, mpi_chunksize=self.args.mpi_chunksize,
+                                                        combinedParallel=self.args.mpi_combined_parallel, num_cores=self.args.num_cores)
             else:
-                self.solver = uqef.solver.MpiSolverOld(modelGenerator, mpi_chunksize=self.args.mpi_chunksize,
-                                                  combinedParallel=self.args.mpi_combined_parallel, num_cores=self.args.num_cores)
+                self.solver = uqef.solver.MpiSolverOld(model_generator, mpi_chunksize=self.args.mpi_chunksize,
+                                                       combinedParallel=self.args.mpi_combined_parallel, num_cores=self.args.num_cores)
         elif self.args.parallel:
-            self.solver = uqef.solver.ParallelSolver(modelGenerator, self.args.num_cores)
+            self.solver = uqef.solver.ParallelSolver(model_generator, self.args.num_cores)
         else:
-            self.solver = uqef.solver.LinearSolver(modelGenerator)
+            self.solver = uqef.solver.LinearSolver(model_generator)
 
         if self.args.mpi is False or (self.args.mpi is True and rank == 0):
             print("solver-setup: {}".format(self.solver.getSetup()))
 
-    def initialise_simulation(self):
-        #####################################
-        ### initialise simulation
-        #####################################
+    def setup_simulation(self):
         if self.is_master():
             simulations = {
                 "mc": (lambda: uqef.simulation.McSimulation(self.solver, self.args.mc_numevaluations))
@@ -148,9 +174,6 @@ class UQsim(object):
 
             print("simulation-setup: {}".format(self.simulation.getSetup()))
 
-            #####################################
-            ### initialise simulation:
-            #####################################
             print("initialise simulation...")
 
             self.simulation.generateSimulationNodes(self.simulationNodes)
@@ -158,44 +181,104 @@ class UQsim(object):
 
             # TODO: assert nodes
 
-    def simulate(self):
+    def setup_runtime_estimator(self):
         if self.is_master():
             #####################################
-            ### start the simulation
+            ### load solves if required:
             #####################################
+            if self.args.opt_runtime:
+                print("runtime optimisation enabled...")
+                simulationFileName = self.args.opt_runtime_gpce_Dir + "/" + self.simulation.name + "_runtime" + ".stat"
+                if os.path.isfile(simulationFileName):
+                    print("Restore runtime estimator from: {}".format(simulationFileName))
+                    runtime_statistics = uqef.stat.Statistics.restoreFromFile(simulationFileName)
+                    self.runtime_estimator = runtime_statistics.runtime_estimator
+                else:
+                    print("No runtime estimator found in: {}".format(simulationFileName))
+            else:
+                print("runtime optimisation disbled...")
+
+    def simulate(self):
+        if self.is_master():
             print("start the simulation...")
             self.solver.init()
 
+            solver_time_start = time.time()
+
             self.simulation.prepareSolver()
 
+        type = uqef.schedule.Types[self.args.opt_type]
+        # type      = uqef.schedule.Type.WORK_LIST
+        # type      = uqef.schedule.Type.WORK_PACKAGE
+
+        algorithm = uqef.schedule.Algorithms[self.args.opt_algorithm]
+        # algorithm = uqef.schedule.Algorithm.FCFS
+        # algorithm = uqef.schedule.Algorithm.LPT
+        # algorithm = uqef.schedule.Algorithm.SPT
+        # algorithm = uqef.schedule.Algorithm.MULTIFIT
+
+        strategy = uqef.schedule.Strategies[self.args.opt_strategy]
+        # strategy  = uqef.schedule.Strategy.FIXED_ALTERNATE
+        # strategy  = uqef.schedule.Strategy.FIXED_LINEAR
+        # strategy  = uqef.schedule.Strategy.DYNAMIC
+
+        if self.is_master():
+            print("Opt type: {}".format(list(uqef.schedule.Types.keys())[list(uqef.schedule.Types.values()).index(type)]))
+            print("Opt algorithm: {}".format(list(uqef.schedule.Algorithms.keys())[list(uqef.schedule.Algorithms.values()).index(algorithm)]))
+            print("Opt strategy: {}".format(list(uqef.schedule.Strategies.keys())[list(uqef.schedule.Strategies.values()).index(strategy)]))
+            sys.stdout.flush()
+
         # do the solving => the propagation
-        self.solver.solve(chunksize=self.args.chunksize)
+        self.solver.solve(runtime_estimator=self.runtime_estimator, chunksize=self.args.chunksize,
+                          type=type, algorithm=algorithm, strategy=strategy)
 
         if self.is_master():
             self.solver.tearDown()  # stop the solver
 
-    def calc_stat(self):
-        #####################################
-        ### calculate statistics:
-        #####################################
-        print("calculate statistics...")
+        if self.is_master():
+            solver_time_end = time.time()
+            solver_time = solver_time_end - solver_time_start
+            print("solver time: {} sec".format(solver_time))
 
-        statistics_ = {
-            "testmodel": (lambda: self.simulation.calculateStatistics(uqef.stat.TestModelStatistics(), self.simulationNodes))
-        }
-        self.statistics = statistics_[model]()
+    def calc_statistics(self):
+        if self.is_master():
+            print("calculate statistics...")
+            self.statistic = self.statistics[self.args.model]()
+
+            if self.args.analyse_runtime is True and self.args.model == "runtime":
+                self.runtime_statistic = self.statistic
+            elif self.args.analyse_runtime is True:
+                self.runtime_statistic = self.statistics["runtime"]()
 
     def print_statistics(self):
-        #####################################
-        ### print statistics:
-        #####################################
-        print("print statistics...")
-        print(self.statistics.printResults())
+        if self.is_master():
+            print("print statistics...")
+            print(self.statistic.printResults())
+
+            if self.args.analyse_runtime is True and self.args.model != "runtime":
+                print(self.runtime_statistic.printResults())
 
     def plot_statistics(self):
-        #####################################
-        ### generate plots
-        #####################################
-        print("generate plots...")
-        fileName = self.simulation.name
-        self.statistics.plotResults(fileName=fileName, directory=self.args.outputResultDir, display=False)
+        if self.is_master():
+            print("generate plots...")
+            fileName = self.simulation.name
+            self.statistic.plotResults(fileName=fileName, directory=self.args.outputResultDir, display=False)
+
+            if self.args.analyse_runtime is True and self.args.model != "runtime":
+                self.runtime_statistic.plotResults(fileName=fileName, directory=self.args.outputResultDir, display=False)
+
+    def save_statistics(self):
+        if self.is_master():
+            print("save statistics...")
+            fileName = self.simulation.name
+            self.statistic.saveToFile(fileName=fileName, directory=self.args.outputResultDir)
+            # statistics.saveAsNetCdf(timesteps=statistics.timesteps, fileName=fileName, directory=outputResultDir)
+            #    statistics.printCsv(fileName=fileName, directory=outputResultDir)
+            #self.statistic.saveRuntimeData(fileName=fileName, directory=self.args.outputResultDir)
+
+            if self.args.analyse_runtime is True:
+                fileName = fileName + "_runtime"
+                self.runtime_statistic.saveToFile(fileName=fileName, directory=self.args.outputResultDir)
+                # statistics.saveAsNetCdf(timesteps=statistics.timesteps, fileName=fileName, directory=outputResultDir)
+                #    statistics.printCsv(fileName=fileName, directory=outputResultDir)
+                self.runtime_statistic.saveRuntimeData(fileName=fileName, directory=self.args.outputResultDir)

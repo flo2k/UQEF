@@ -26,7 +26,7 @@ class Statistics(object):
         
     def calcStatisticsForMc(self, rawSamples, timesteps,
                             simulationNodes, numEvaluations, solverTimes,
-                            work_package_indexes, original_runtime_estimator):
+                            work_package_indexes, original_runtime_estimator=None):
         pass
 
     def calcStatisticsForSc(self, rawSamples, timestamps,

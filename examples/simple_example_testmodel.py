@@ -115,7 +115,7 @@ if mpi == False or (mpi == True and rank == 0):
     uncertain_param_2_std = 0.1
 
     nodeNames = ["uncertain_param_1", "uncertain_param_2"]
-    simulationNodes = uqef.simulation.Nodes(nodeNames)
+    simulationNodes = uqef.nodes.Nodes(nodeNames)
 
     if args.uncertain == "all":
         simulationNodes.setDist("uncertain_param_1", cp.Normal(uncertain_param_1, uncertain_param_1_std))
@@ -137,7 +137,7 @@ if mpi == False or (mpi == True and rank == 0):
 ### initialise model
 #####################################
 
-def modelGenerator():
+def model_generator():
     models = {
         "testmodel": (lambda: uqef.model.TestModel())
     }
@@ -150,15 +150,15 @@ def modelGenerator():
 
 if mpi == True:
     if args.mpi_method == "new":
-        solver = uqef.solver.MpiPoolSolver(modelGenerator, mpi_chunksize=args.mpi_chunksize,
+        solver = uqef.solver.MpiPoolSolver(model_generator, mpi_chunksize=args.mpi_chunksize,
                                            combinedParallel=args.mpi_combined_parallel, num_cores=num_cores)
     else:
-        solver = uqef.solver.MpiSolverOld(modelGenerator, mpi_chunksize=args.mpi_chunksize,
+        solver = uqef.solver.MpiSolverOld(model_generator, mpi_chunksize=args.mpi_chunksize,
                                               combinedParallel=args.mpi_combined_parallel, num_cores=num_cores)
 elif args.parallel:
-    solver = uqef.solver.ParallelSolver(modelGenerator, num_cores)
+    solver = uqef.solver.ParallelSolver(model_generator, num_cores)
 else:
-    solver = uqef.solver.LinearSolver(modelGenerator)
+    solver = uqef.solver.LinearSolver(model_generator)
 
 if mpi == False or (mpi == True and rank == 0):
     print("solver-setup: {}".format(solver.getSetup()))

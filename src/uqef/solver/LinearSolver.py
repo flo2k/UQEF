@@ -20,16 +20,16 @@ class LinearSolver(Solver):
     LinearSolver solves one work package after another. There is no parallelisation involved.
     """
 
-    def __init__(self, modelGenerator, normaliseParams=False):
+    def __init__(self, model_generator, normaliseParams=False):
         Solver.__init__(self)
 
         # behavior
-        self.modelGenerator = modelGenerator
+        self.model_generator = model_generator
         self.normaliseParams = normaliseParams
 
         self.solverTimes.parallel_solvers_per_work_package = np.array([1])
         
-        self.infoModel = modelGenerator()
+        self.infoModel = model_generator()
 
     def getSetup(self):
         return "%s" % (type(self).__name__)

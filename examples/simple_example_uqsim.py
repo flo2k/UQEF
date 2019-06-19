@@ -8,34 +8,22 @@ A simple example for the usage of the UQEF with a test model.
 import matplotlib
 matplotlib.use('Agg')
 
-# parsing args
-import argparse
-
-# for parallel computing
-import multiprocessing
-
-# for message passing
-from mpi4py import MPI
-
 # numerical stuff
 import chaospy as cp
-import numpy as np
 import uqef
 
-# system stuff
-import os
-
-
+# instantiate UQsim
 uqsim = uqef.UQsim()
 
+# parsing args:
 uqsim.parse_args()
-uqsim.setup_path()
-uqsim.setup_parallelisation()
-uqsim.setup_nodes(["uncertain_param_1", "uncertain_param_2"])
+uqsim.args.analyse_runtime = True
 
-uqsim.simulationNodes
 
+# initialise uncertain parameters:
 if uqsim.is_master():
+    uqsim.setup_nodes(["uncertain_param_1", "uncertain_param_2"])
+
     # parameter setup
     uncertain_param_1 = 3
     uncertain_param_1_std = 0.1
@@ -52,13 +40,14 @@ if uqsim.is_master():
         uqsim.simulationNodes.setValue("uncertain_param_1", uncertain_param_1)
         uqsim.simulationNodes.setDist("uncertain_param_2", cp.Normal(uncertain_param_2, uncertain_param_2_std))
 
+# setup
+uqsim.setup()
 
-uqsim.setup_model()
-
-uqsim.initialise_solver()
-uqsim.initialise_simulation()
+# start the simulation
 uqsim.simulate()
 
-uqsim.calc_stat()
+# statistics:
+uqsim.calc_statistics()
 uqsim.print_statistics()
 uqsim.plot_statistics()
+uqsim.save_statistics()
