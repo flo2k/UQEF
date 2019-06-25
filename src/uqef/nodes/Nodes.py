@@ -172,7 +172,7 @@ class Nodes(object):
         #resultTable.append(self.nodeNames)
 
         nodes = self.nodes.T
-        for i in range(0, len(self.nodes)):
+        for i in range(0, len(nodes)):
             resultTable.append(nodes[i])
 
         str = tabulate(resultTable, headers=self.nodeNames, floatfmt="f") + "\n"
