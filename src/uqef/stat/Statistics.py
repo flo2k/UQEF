@@ -29,7 +29,7 @@ class Statistics(object):
                             work_package_indexes, original_runtime_estimator=None):
         pass
 
-    def calcStatisticsForSc(self, rawSamples, timestamps,
+    def calcStatisticsForSc(self, rawSamples, timesteps,
                             simulationNodes, order, solverTimes,
                             work_package_indexes, original_runtime_estimator=None):
         pass
