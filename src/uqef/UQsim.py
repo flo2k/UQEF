@@ -89,7 +89,7 @@ class UQsim(object):
         self.parser.add_argument('--chunksize'                 , type=int, default=1)
         self.parser.add_argument('--mpi_chunksize'             , type=int, default=1)
 
-        self.parser.add_argument('--uncertain'                 , default='all')  # all, uncertain_param_1, uncertain_param_2
+        self.parser.add_argument('--uncertain'                 , default='all')
         self.parser.add_argument('--uq_method'                 , default="sc")  # sc, mc
         self.parser.add_argument('--mc_numevaluations'         , type=int, default=27)
         self.parser.add_argument('--sc_q_order'                , type=int, default=2)  # number of collocation points in each direction (Q)
@@ -244,11 +244,13 @@ class UQsim(object):
         if self.is_master():
             print("calculate statistics...")
             self.statistic = self.statistics[self.args.model]()
+            self.simulation.calculateStatistics(self.statistic, self.simulationNodes, self.runtime_estimator)
 
             if self.args.analyse_runtime is True and self.args.model == "runtime":
                 self.runtime_statistic = self.statistic
             elif self.args.analyse_runtime is True:
                 self.runtime_statistic = self.statistics["runtime"]()
+                self.simulation.calculateStatistics(self.statistic, self.simulationNodes, self.runtime_estimator)
 
     def print_statistics(self):
         if self.is_master():
