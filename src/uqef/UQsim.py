@@ -65,6 +65,8 @@ class UQsim(object):
         if self.args.mpi is True:
             print("rank: {} exit".format(rank))
 
+        sys.stdout.flush()
+
     def _init_parser(self):
         if rank == 0:
             print("parsing args...")
@@ -115,6 +117,10 @@ class UQsim(object):
         if self.args.smoketest is True:
             print("smoke test passed: exit!")
             exit(0)
+
+        if self.is_master():
+            print("rank: {} is master!".format(rank))
+
 
     def setup(self):
         self.setup_path()
