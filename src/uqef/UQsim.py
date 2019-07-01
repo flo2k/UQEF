@@ -8,6 +8,7 @@ import multiprocessing
 
 # for message passing
 from mpi4py import MPI
+import mpi4py
 
 import uqef
 
@@ -32,6 +33,7 @@ version2 = MPI.Get_version()
 if rank == 0: print("MPI version: {}".format(version))
 if rank == 0: print("MPI2 version: {}".format(version2))
 if rank == 0: print("MPI3 version: {}".format(MPI.VERSION))
+if rank == 0: print("mpi4py version: {}".format(mpi4py.__version__))
 
 print("rank {}: starttime: {}".format(rank, datetime.datetime.now().strftime('%Y.%m.%d %H:%M:%S')))
 
