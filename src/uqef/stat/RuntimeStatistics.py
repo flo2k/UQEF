@@ -54,7 +54,8 @@ class RuntimeStatistics(Statistics):
                             work_package_indexes, original_runtime_estimator):
         self.timesteps = timesteps
         self.numTimeSteps = len(self.timesteps)
-        samples = Samples(rawSamples, self.numTimeSteps)
+        self.solverTimes = solverTimes
+        samples = Samples(self.solverTimes.T_i_S, self.numTimeSteps)
 
         ##extract the statistics
         # expectation value
