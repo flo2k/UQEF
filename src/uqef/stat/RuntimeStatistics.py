@@ -51,7 +51,7 @@ class RuntimeStatistics(Statistics):
 
     def calcStatisticsForMc(self, rawSamples, timesteps,
                             simulationNodes, numEvaluations, solverTimes,
-                            work_package_indexes, original_runtime_estimator):
+                            work_package_indexes, original_runtime_estimator=None):
         self.timesteps = timesteps
         self.numTimeSteps = len(self.timesteps)
         self.solverTimes = solverTimes
@@ -88,7 +88,7 @@ class RuntimeStatistics(Statistics):
 
     def calcStatisticsForSc(self, rawSamples, timesteps,
                             simulationNodes, order, solverTimes,
-                            work_package_indexes, original_runtime_estimator):
+                            work_package_indexes, original_runtime_estimator=None):
         nodes = simulationNodes.distNodes
         weights = simulationNodes.weights
         dist = simulationNodes.joinedDists
