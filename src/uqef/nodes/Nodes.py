@@ -52,6 +52,10 @@ class Nodes(object):
         numDists = len(self.dists)
         
         assert (numValues + numDists) == numRegisteredNodes, "not enough values registered"
+
+    def getDistNodeNames(self):
+        distNodeNames = [nodeName for nodeName in self.nodeNames if nodeName in self.dists]
+        return distNodeNames
     
     def generateNodesForMC(self, numSamples):
         if self.numSamplesOrScDim == numSamples:
