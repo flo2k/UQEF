@@ -10,6 +10,8 @@ import multiprocessing
 from mpi4py import MPI
 import mpi4py
 
+import chaospy as cp
+
 import uqef
 
 #time measure
@@ -19,6 +21,9 @@ import datetime
 # system stuff
 import os
 import sys
+import inspect
+
+import json
 
 #####################################
 ### MPI infos:
@@ -100,6 +105,7 @@ class UQsim(object):
         self.parser.add_argument('--sc_p_order'                , type=int, default=1)  # number of terms in PCE (N)
         self.parser.add_argument('--sc_sparse_quadrature'      , action='store_true', default=False)
         self.parser.add_argument('--sc_quadrature_rule'        , default='g')
+        self.parser.add_argument('--config_file')
 
         self.parser.add_argument('--analyse_runtime'           , action='store_true', default=True)
         self.parser.add_argument('--opt_runtime'               , action='store_true', default=False)
@@ -125,6 +131,7 @@ class UQsim(object):
 
 
     def setup(self):
+        self.setup_nodes_via_config_file()
         self.setup_path()
         self.setup_model()
         self.setup_parallelisation()
@@ -151,6 +158,31 @@ class UQsim(object):
 
     def setup_nodes(self, nodeNames):
         self.simulationNodes = uqef.nodes.Nodes(nodeNames)
+
+    def setup_nodes_via_config_file(self):
+        if self.is_master() and self.args.config_file:
+            print("Config nodes via config file: {}".format(self.args.config_file))
+
+            with open(self.args.config_file) as f:
+                configuration_object = json.load(f)
+
+                # node names
+                node_names = []
+                for parameter_config in configuration_object["parameters"]:
+                    node_names.append(parameter_config["name"])
+                self.setup_nodes(node_names)
+
+                # node values and distributions -> automatically maps dists and their parameters by reflection mechanisms
+                for parameter_config in configuration_object["parameters"]:
+                    if parameter_config["distribution"] == "None":
+                        self.simulationNodes.setValue(parameter_config["name"], parameter_config["mu"])
+                    else:
+                        cp_dist_signature = inspect.signature(getattr(cp, parameter_config["distribution"]))
+                        dist_parameters_values = []
+                        for p in cp_dist_signature.parameters:
+                            dist_parameters_values.append(parameter_config[p])
+
+                        self.simulationNodes.setDist(parameter_config["name"], getattr(cp, "Normal")(*dist_parameters_values))
 
     def setup_model(self):
         model_generator.model = self.models[self.args.model]
@@ -185,6 +217,11 @@ class UQsim(object):
             print("initialise simulation...")
 
             self.simulation.generateSimulationNodes(self.simulationNodes)
+            print("")
+            print("Nodes setup:")
+            print(self.simulationNodes.printNodesSetup())
+            print("")
+            print("Nodes:")
             print(self.simulationNodes.printNodes())
 
             # TODO: assert nodes
