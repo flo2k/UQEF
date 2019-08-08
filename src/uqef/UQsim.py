@@ -14,7 +14,7 @@ import chaospy as cp
 
 import uqef
 
-#time measure
+# time measure
 import time
 import datetime
 
@@ -24,6 +24,7 @@ import sys
 import inspect
 
 import json
+import dill
 
 #####################################
 ### MPI infos:
@@ -51,28 +52,39 @@ class UQsim(object):
     def __init__(self):
         self._init_parser()
 
-        self.models = {
-            "testmodel": (lambda: uqef.model.TestModel())
-        }
-
-        self.statistics = {
-            "testmodel": (lambda: self.simulation.calculateStatistics(uqef.stat.TestModelStatistics(), self.simulationNodes)),
-            "runtime": (lambda: self.simulation.calculateStatistics(uqef.stat.RuntimeStatistics(), self.simulationNodes))
-        }
-
         self.args = None
-        self.simulationNodes = None
-        self.simulation = None
-        self.runtime_estimator = None
-        self.solver = None
-        self.statistic = None
-        self.runtime_statistic = None
+        self.parse_args()
+
+        if self.args.uqsim_restore_from_file:
+            self.restore_from_file()
+            self.parse_args() # reparse args to overwrite old arguments
+            self.__restored = True
+        else:
+            self.models = {
+                "testmodel": (lambda: uqef.model.TestModel())
+            }
+
+            self.statistics = {
+                "testmodel": (lambda: self.simulation.calculateStatistics(uqef.stat.TestModelStatistics(), self.simulationNodes)),
+                "runtime": (lambda: self.simulation.calculateStatistics(uqef.stat.RuntimeStatistics(), self.simulationNodes))
+            }
+
+            self.simulationNodes = None
+            self.simulation = None
+            self.runtime_estimator = None
+            self.solver = None
+            self.statistic = None
+            self.runtime_statistic = None
+
+            self.__restored = False
 
     def __del__(self):
         if self.args.mpi is True:
             print("rank: {} exit".format(rank))
 
         sys.stdout.flush()
+
+        self.store_to_file()
 
     def _init_parser(self):
         if rank == 0:
@@ -81,6 +93,11 @@ class UQsim(object):
         self.parser = argparse.ArgumentParser(description='Uncertainty Quantification simulation.')
 
         self.parser.add_argument('--smoketest'                 , action='store_true', default=False)
+
+        self.parser.add_argument('--uqsim_file'                , default="uqsim.saved")
+        self.parser.add_argument('--uqsim_store_to_file'       , action='store_true', default=False)
+        self.parser.add_argument('--uqsim_restore_from_file'   , action='store_true', default=False)
+        self.parser.add_argument('--disable_statistics'        , action='store_true', default=False)
 
         self.parser.add_argument('-im', '--inputModelDir'      , default=".")
         self.parser.add_argument('-om', '--outputModelDir'     , default=".")
@@ -129,15 +146,18 @@ class UQsim(object):
         if self.is_master():
             print("rank: {} is master!".format(rank))
 
-
     def setup(self):
-        self.setup_nodes_via_config_file()
-        self.setup_path()
-        self.setup_model()
-        self.setup_parallelisation()
-        self.setup_solver()
-        self.setup_simulation()
-        self.setup_runtime_estimator()
+        if not self.__restored and self.args.uqsim_restore_from_file is True: # for locally configured restore
+            self.restore_from_file()
+            self.__restored = True
+        if not self.__restored:
+            self.setup_nodes_via_config_file()
+            self.setup_path()
+            self.setup_model()
+            self.setup_parallelisation()
+            self.setup_solver()
+            self.setup_simulation()
+            self.setup_runtime_estimator()
 
     def setup_path(self):
         if rank == 0:
@@ -156,8 +176,8 @@ class UQsim(object):
         if self.is_master():
             print("set num cores to: {}".format(self.args.num_cores))
 
-    def setup_nodes(self, nodeNames):
-        self.simulationNodes = uqef.nodes.Nodes(nodeNames)
+    def setup_nodes(self, node_names):
+        self.simulationNodes = uqef.nodes.Nodes(node_names)
 
     def setup_nodes_via_config_file(self):
         if self.is_master() and self.args.config_file:
@@ -244,49 +264,50 @@ class UQsim(object):
                 print("runtime optimisation disbled...")
 
     def simulate(self):
-        if self.is_master():
-            print("start the simulation...")
-            self.solver.init()
+        if self.__restored is False:
+            if self.is_master():
+                print("start the simulation...")
+                self.solver.init()
 
-            solver_time_start = time.time()
+                solver_time_start = time.time()
 
-            self.simulation.prepareSolver()
+                self.simulation.prepareSolver()
 
-        type = uqef.schedule.Types[self.args.opt_type]
-        # type      = uqef.schedule.Type.WORK_LIST
-        # type      = uqef.schedule.Type.WORK_PACKAGE
+            type = uqef.schedule.Types[self.args.opt_type]
+            # type      = uqef.schedule.Type.WORK_LIST
+            # type      = uqef.schedule.Type.WORK_PACKAGE
 
-        algorithm = uqef.schedule.Algorithms[self.args.opt_algorithm]
-        # algorithm = uqef.schedule.Algorithm.FCFS
-        # algorithm = uqef.schedule.Algorithm.LPT
-        # algorithm = uqef.schedule.Algorithm.SPT
-        # algorithm = uqef.schedule.Algorithm.MULTIFIT
+            algorithm = uqef.schedule.Algorithms[self.args.opt_algorithm]
+            # algorithm = uqef.schedule.Algorithm.FCFS
+            # algorithm = uqef.schedule.Algorithm.LPT
+            # algorithm = uqef.schedule.Algorithm.SPT
+            # algorithm = uqef.schedule.Algorithm.MULTIFIT
 
-        strategy = uqef.schedule.Strategies[self.args.opt_strategy]
-        # strategy  = uqef.schedule.Strategy.FIXED_ALTERNATE
-        # strategy  = uqef.schedule.Strategy.FIXED_LINEAR
-        # strategy  = uqef.schedule.Strategy.DYNAMIC
+            strategy = uqef.schedule.Strategies[self.args.opt_strategy]
+            # strategy  = uqef.schedule.Strategy.FIXED_ALTERNATE
+            # strategy  = uqef.schedule.Strategy.FIXED_LINEAR
+            # strategy  = uqef.schedule.Strategy.DYNAMIC
 
-        if self.is_master():
-            print("Opt type: {}".format(list(uqef.schedule.Types.keys())[list(uqef.schedule.Types.values()).index(type)]))
-            print("Opt algorithm: {}".format(list(uqef.schedule.Algorithms.keys())[list(uqef.schedule.Algorithms.values()).index(algorithm)]))
-            print("Opt strategy: {}".format(list(uqef.schedule.Strategies.keys())[list(uqef.schedule.Strategies.values()).index(strategy)]))
-            sys.stdout.flush()
+            if self.is_master():
+                print("Opt type: {}".format(list(uqef.schedule.Types.keys())[list(uqef.schedule.Types.values()).index(type)]))
+                print("Opt algorithm: {}".format(list(uqef.schedule.Algorithms.keys())[list(uqef.schedule.Algorithms.values()).index(algorithm)]))
+                print("Opt strategy: {}".format(list(uqef.schedule.Strategies.keys())[list(uqef.schedule.Strategies.values()).index(strategy)]))
+                sys.stdout.flush()
 
-        # do the solving => the propagation
-        self.solver.solve(runtime_estimator=self.runtime_estimator, chunksize=self.args.chunksize,
-                          type=type, algorithm=algorithm, strategy=strategy)
+            # do the solving => the propagation
+            self.solver.solve(runtime_estimator=self.runtime_estimator, chunksize=self.args.chunksize,
+                              type=type, algorithm=algorithm, strategy=strategy)
 
-        if self.is_master():
-            self.solver.tearDown()  # stop the solver
+            if self.is_master():
+                self.solver.tearDown()  # stop the solver
 
-        if self.is_master():
-            solver_time_end = time.time()
-            solver_time = solver_time_end - solver_time_start
-            print("solver time: {} sec".format(solver_time))
+            if self.is_master():
+                solver_time_end = time.time()
+                solver_time = solver_time_end - solver_time_start
+                print("solver time: {} sec".format(solver_time))
 
     def calc_statistics(self):
-        if self.is_master():
+        if self.is_master() and self.args.disable_statistics is False:
             print("calculate statistics...")
             self.statistic = self.statistics[self.args.model]()
             self.simulation.calculateStatistics(self.statistic, self.simulationNodes, self.runtime_estimator)
@@ -298,7 +319,7 @@ class UQsim(object):
                 self.simulation.calculateStatistics(self.statistic, self.simulationNodes, self.runtime_estimator)
 
     def print_statistics(self):
-        if self.is_master():
+        if self.is_master() and self.args.disable_statistics is False:
             print("print statistics...")
             print(self.statistic.printResults())
 
@@ -306,7 +327,7 @@ class UQsim(object):
                 print(self.runtime_statistic.printResults())
 
     def plot_statistics(self):
-        if self.is_master():
+        if self.is_master() and self.args.disable_statistics is False:
             print("generate plots...")
             fileName = self.simulation.name
             self.statistic.plotResults(fileName=fileName, directory=self.args.outputResultDir, display=False)
@@ -315,7 +336,7 @@ class UQsim(object):
                 self.runtime_statistic.plotResults(fileName=fileName, directory=self.args.outputResultDir, display=False)
 
     def save_statistics(self):
-        if self.is_master():
+        if self.is_master() and self.args.disable_statistics is False:
             print("save statistics...")
             fileName = self.simulation.name
             self.statistic.saveToFile(fileName=fileName, directory=self.args.outputResultDir)
@@ -329,3 +350,22 @@ class UQsim(object):
                 # statistics.saveAsNetCdf(timesteps=statistics.timesteps, fileName=fileName, directory=outputResultDir)
                 #    statistics.printCsv(fileName=fileName, directory=outputResultDir)
                 self.runtime_statistic.saveRuntimeData(fileName=fileName, directory=self.args.outputResultDir)
+
+    @staticmethod
+    def load_from_file(file_name):
+        with open(file_name, 'rb') as f:
+            return dill.load(f)
+
+    def save_to_file(self, file_name):
+        with open(file_name, 'wb') as f:
+            dill.dump(self, f)
+
+    def store_to_file(self):
+        if self.args.uqsim_store_to_file:
+            self.save_to_file(self.args.uqsim_file)
+
+    def restore_from_file(self):
+        if self.args.uqsim_restore_from_file:
+            print("Restore from file: {}".format(self.args.uqsim_restore_from_file))
+            self.__dict__.update(self.load_from_file(self.args.uqsim_file).__dict__)
+
