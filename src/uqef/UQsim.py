@@ -116,7 +116,7 @@ class UQsim(object):
         self.parser.add_argument('--mpi_chunksize'             , type=int, default=1)
 
         self.parser.add_argument('--uncertain'                 , default='all')
-        self.parser.add_argument('--uq_method'                 , default="sc")  # sc, mc
+        self.parser.add_argument('--uq_method'                 , default="sc")  # sc, mc, saltelli
         self.parser.add_argument('--regression'                , action='store_true', default=False)
         self.parser.add_argument('--mc_numevaluations'         , type=int, default=27)
         self.parser.add_argument('--sc_q_order'                , type=int, default=2)  # number of collocation points in each direction (Q)
@@ -227,11 +227,13 @@ class UQsim(object):
     def setup_simulation(self):
         if self.is_master():
             simulations = {
-                "mc": (lambda: uqef.simulation.McSimulation(self.solver, self.args.mc_numevaluations, self.args.sc_p_order,
-                                                            self.args.regression))
-               ,"sc": (lambda: uqef.simulation.ScSimulation(self.solver, self.args.sc_q_order, self.args.sc_p_order,
-                                                            self.args.sc_quadrature_rule, self.args.sc_sparse_quadrature,
-                                                            self.args.regression))
+                "mc"      : (lambda: uqef.simulation.McSimulation(self.solver, self.args.mc_numevaluations, self.args.sc_p_order,
+                                                                  self.args.regression))
+               ,"saltelli": (lambda: uqef.simulation.SaltelliSimulation(self.solver, self.args.mc_numevaluations, self.args.sc_p_order,
+                                                                        self.args.regression))
+               ,"sc"      : (lambda: uqef.simulation.ScSimulation(self.solver, self.args.sc_q_order, self.args.sc_p_order,
+                                                                  self.args.sc_quadrature_rule, self.args.sc_sparse_quadrature,
+                                                                  self.args.regression))
             }
             self.simulation = simulations[self.args.uq_method]()
 
