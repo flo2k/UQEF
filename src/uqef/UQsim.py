@@ -65,8 +65,8 @@ class UQsim(object):
             }
 
             self.statistics = {
-                "testmodel": (lambda: self.simulation.calculateStatistics(uqef.stat.TestModelStatistics(), self.simulationNodes)),
-                "runtime": (lambda: self.simulation.calculateStatistics(uqef.stat.RuntimeStatistics(), self.simulationNodes))
+                "testmodel": (lambda: uqef.stat.TestModelStatistics()),
+                "runtime": (lambda: uqef.stat.RuntimeStatistics())
             }
 
             self.simulationNodes = None
@@ -316,7 +316,7 @@ class UQsim(object):
                 self.runtime_statistic = self.statistic
             elif self.args.analyse_runtime is True:
                 self.runtime_statistic = self.statistics["runtime"]()
-                self.simulation.calculateStatistics(self.statistic, self.simulationNodes, self.runtime_estimator)
+                self.simulation.calculateStatistics(self.runtime_statistic, self.simulationNodes, self.runtime_estimator)
 
     def print_statistics(self):
         if self.is_master() and self.args.disable_statistics is False:
