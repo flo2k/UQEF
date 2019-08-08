@@ -50,44 +50,51 @@ class RuntimeStatistics(Statistics):
         self.runtime_estimator = None
 
     def calcStatisticsForMc(self, rawSamples, timesteps,
-                            simulationNodes, numEvaluations, solverTimes,
+                            simulationNodes, numEvaluations, order, regression, solverTimes,
                             work_package_indexes, original_runtime_estimator=None):
         self.timesteps = timesteps
         self.numTimeSteps = len(self.timesteps)
         self.solverTimes = solverTimes
         samples = Samples(self.solverTimes.T_i_S, self.numTimeSteps)
 
-        ##extract the statistics
-        # expectation value
-        self.E_runtime = np.sum(samples.runtime, 0) / numEvaluations
+        if regression:
+            nodes = simulationNodes.distNodes
+            dist = simulationNodes.joinedDists
+            P = cp.orth_ttr(order, dist)
+            self.GPCe_runtime = cp.fit_regression(P, nodes, samples.runtime)
+            self.calc_stats_for_gPCE(dist)
+        else:
+            ##extract the statistics
+            # expectation value
+            self.E_runtime = np.sum(samples.runtime, 0) / numEvaluations
 
-        # percentiles
-        self.P5_runtime = np.percentile(samples.runtime, 5, axis=0)
-        self.P95_runtime = np.percentile(samples.runtime, 90, axis=0)
+            # percentiles
+            self.P5_runtime = np.percentile(samples.runtime, 5, axis=0)
+            self.P95_runtime = np.percentile(samples.runtime, 90, axis=0)
 
-#        if len(self.P5_runtime) == 1:
-#            self.P5_runtime = self.P5_runtime[0]
-#            self.P95_runtime = self.P95_runtime[0]
+    #        if len(self.P5_runtime) == 1:
+    #            self.P5_runtime = self.P5_runtime[0]
+    #            self.P95_runtime = self.P95_runtime[0]
 
-        # variance
-        self.Var_runtime = np.sum(samples.runtime ** 2, 0) / numEvaluations - self.E_runtime ** 2
+            # variance
+            self.Var_runtime = np.sum(samples.runtime ** 2, 0) / numEvaluations - self.E_runtime ** 2
 
-        # standard deviation
-        self.StdDev_runtime = np.sqrt(self.Var_runtime)
+            # standard deviation
+            self.StdDev_runtime = np.sqrt(self.Var_runtime)
 
-        #qoi dists
-        self.qoi_dist_sampling = np.linspace(5, 45, 10**4, endpoint=True)
+            #qoi dists
+            self.qoi_dist_sampling = np.linspace(5, 45, 10**4, endpoint=True)
 
-        qoi_dist_runtime = cp.SampleDist(samples.runtime)
+            qoi_dist_runtime = cp.SampleDist(samples.runtime)
 
-        self.qoi_dist_runtime_pdf = np.zeros((len(self.qoi_dist_sampling)))
-        self.qoi_dist_runtime_pdf = qoi_dist_runtime.pdf(self.qoi_dist_sampling)
+            self.qoi_dist_runtime_pdf = np.zeros((len(self.qoi_dist_sampling)))
+            self.qoi_dist_runtime_pdf = qoi_dist_runtime.pdf(self.qoi_dist_sampling)
 
         # real runtime
         self.real_runtime = samples.runtime.copy()
 
     def calcStatisticsForSc(self, rawSamples, timesteps,
-                            simulationNodes, order, solverTimes,
+                            simulationNodes, order, regression, solverTimes,
                             work_package_indexes, original_runtime_estimator=None):
         nodes = simulationNodes.distNodes
         weights = simulationNodes.weights
@@ -101,37 +108,14 @@ class RuntimeStatistics(Statistics):
         
         P = cp.orth_ttr(order, dist)
 
-        self.GPCe_runtime = cp.fit_quadrature(P, nodes, weights, samples.runtime)
-        #self.GPCe_runtime = cp.fit_regression(P, nodes, samples.runtime)
+        if regression:
+            self.GPCe_runtime = cp.fit_regression(P, nodes, samples.runtime)
+        else:
+            self.GPCe_runtime = cp.fit_quadrature(P, nodes, weights, samples.runtime)
+
         self.runtime_estimator = self.GPCe_runtime
 
-        ## extract the statistics
-        # expectation value
-        self.E_runtime = cp.E(self.GPCe_runtime, dist)
-
-        # percentiles
-        numPercSamples = 10 ** 5
-
-        self.P5_runtime = cp.Perc(self.GPCe_runtime, 5, dist, numPercSamples)
-        self.P95_runtime = cp.Perc(self.GPCe_runtime, 95, dist, numPercSamples)
-
-#        if len(self.P5_runtime) == 1:
-#            self.P5_runtime = self.P5_runtime[0]
-#            self.P95_runtime = self.P95_runtime[0]
-
-        # variance
-        self.Var_runtime = cp.Var(self.GPCe_runtime, dist)
-
-        # standard deviation
-        self.StdDev_runtime = cp.Std(self.GPCe_runtime, dist)
-
-        # sobol indices
-        self.Sobol_m_runtime = cp.Sens_m(self.GPCe_runtime, dist)
-        self.Sobol_m_runtime_int = 1 - np.sum(self.Sobol_m_runtime)
-
-        self.Sobol_m2_runtime = cp.Sens_m2(self.GPCe_runtime, dist)
-
-        self.Sobol_t_runtime = cp.Sens_t(self.GPCe_runtime, dist)
+        self.calc_stats_for_gPCE(dist)
 
         # qoi_dists
         delta = 2
@@ -219,6 +203,35 @@ class RuntimeStatistics(Statistics):
         self.OET_S_overhead = self.T_S_overhead
 
         self.OET_Prop = self.OET_SWP_worker + self.OET_C + self.OET_S_overhead
+
+    def calc_stats_for_gPCE(self, dist):
+        ## extract the statistics
+        # expectation value
+        self.E_runtime = cp.E(self.GPCe_runtime, dist)
+
+        # percentiles
+        numPercSamples = 10 ** 5
+
+        self.P5_runtime = cp.Perc(self.GPCe_runtime, 5, dist, numPercSamples)
+        self.P95_runtime = cp.Perc(self.GPCe_runtime, 95, dist, numPercSamples)
+
+        #        if len(self.P5_runtime) == 1:
+        #            self.P5_runtime = self.P5_runtime[0]
+        #            self.P95_runtime = self.P95_runtime[0]
+
+        # variance
+        self.Var_runtime = cp.Var(self.GPCe_runtime, dist)
+
+        # standard deviation
+        self.StdDev_runtime = cp.Std(self.GPCe_runtime, dist)
+
+        # sobol indices
+        self.Sobol_m_runtime = cp.Sens_m(self.GPCe_runtime, dist)
+        self.Sobol_m_runtime_int = 1 - np.sum(self.Sobol_m_runtime)
+
+        self.Sobol_m2_runtime = cp.Sens_m2(self.GPCe_runtime, dist)
+
+        self.Sobol_t_runtime = cp.Sens_t(self.GPCe_runtime, dist)
 
     def printResults(self, timestep=-1, printAllTimeSteps=False):
         # print results

@@ -25,12 +25,12 @@ class Statistics(object):
         pass
         
     def calcStatisticsForMc(self, rawSamples, timesteps,
-                            simulationNodes, numEvaluations, solverTimes,
+                            simulationNodes, numEvaluations, order, regression, solverTimes,
                             work_package_indexes, original_runtime_estimator=None):
         pass
 
     def calcStatisticsForSc(self, rawSamples, timesteps,
-                            simulationNodes, order, solverTimes,
+                            simulationNodes, order, regression, solverTimes,
                             work_package_indexes, original_runtime_estimator=None):
         pass
 

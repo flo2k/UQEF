@@ -15,10 +15,8 @@ import uqef
 # instantiate UQsim
 uqsim = uqef.UQsim()
 
-# parsing args:
-uqsim.parse_args()
+# args:
 uqsim.args.analyse_runtime = True
-
 
 # initialise uncertain parameters:
 if uqsim.is_master():

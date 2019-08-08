@@ -34,32 +34,41 @@ class TestModelStatistics(Statistics):
         Statistics.__init__(self)
 
     def calcStatisticsForMc(self, rawSamples, timesteps,
-                            simulationNodes, numEvaluations, solverTimes,
+                            simulationNodes, numEvaluations, order,
+                            regression,
+                            solverTimes,
                             work_package_indexes, original_runtime_estimator):
         self.timesteps = timesteps
         self.numTimeSteps = len(self.timesteps)
         samples = Samples(rawSamples, self.numTimeSteps)
 
-        ##extract the statistics
-        # expectation value
-        self.E_qoi = np.sum(samples.voi, 0) / numEvaluations
+        if regression:
+            nodes = simulationNodes.distNodes
+            dist = simulationNodes.joinedDists
+            P = cp.orth_ttr(order, dist)
+            self.qoi_gPCE = cp.fit_regression(P, nodes, samples.voi)
+            self.calc_stats_for_gPCE(dist)
+        else:
+            ##extract the statistics
+            # expectation value
+            self.E_qoi = np.sum(samples.voi, 0) / numEvaluations
 
-        # percentiles
-        self.P10_qoi = np.percentile(samples.voi, 10, axis=0)
-        self.P90_qoi = np.percentile(samples.voi, 90, axis=0)
+            # percentiles
+            self.P10_qoi = np.percentile(samples.voi, 10, axis=0)
+            self.P90_qoi = np.percentile(samples.voi, 90, axis=0)
 
-        if isinstance(self.P10_qoi, (list)) and len(self.P10_qoi) == 1:
-            self.P10_qoi = self.P10_qoi[0]
-            self.P90_qoi = self.P90_qoi[0]
+            if isinstance(self.P10_qoi, (list)) and len(self.P10_qoi) == 1:
+                self.P10_qoi = self.P10_qoi[0]
+                self.P90_qoi = self.P90_qoi[0]
 
-        # variance
-        self.Var_qoi = np.sum(samples.voi ** 2, 0) / numEvaluations - self.E_qoi ** 2
+            # variance
+            self.Var_qoi = np.sum(samples.voi ** 2, 0) / numEvaluations - self.E_qoi ** 2
 
-        # standard deviation
-        self.StdDev_qoi = np.sqrt(self.Var_qoi)
+            # standard deviation
+            self.StdDev_qoi = np.sqrt(self.Var_qoi)
 
     def calcStatisticsForSc(self, rawSamples, timesteps,
-                            simulationNodes, order, solverTimes,
+                            simulationNodes, order, regression, solverTimes,
                             work_package_indexes, original_runtime_estimator):
         nodes = simulationNodes.distNodes
         weights = simulationNodes.weights
@@ -72,34 +81,40 @@ class TestModelStatistics(Statistics):
 
         P = cp.orth_ttr(order, dist)
 
-        qoi_gPCE = cp.fit_quadrature(P, nodes, weights, samples.voi)
+        if regression:
+            self.qoi_gPCE = cp.fit_regression(P, nodes, samples.voi)
+        else:
+            self.qoi_gPCE = cp.fit_quadrature(P, nodes, weights, samples.voi)
 
+        self.calc_stats_for_gPCE(dist)
+
+    def calc_stats_for_gPCE(self, dist):
         ##extract the statistics
         # expectation value
-        self.E_qoi = cp.E(qoi_gPCE, dist)
+        self.E_qoi = cp.E(self.qoi_gPCE, dist)
 
         # percentiles
         numPercSamples = 10 ** 5
 
-        self.P10_qoi = cp.Perc(qoi_gPCE, 10, dist, numPercSamples)
-        self.P90_qoi = cp.Perc(qoi_gPCE, 90, dist, numPercSamples)
+        self.P10_qoi = cp.Perc(self.qoi_gPCE, 10, dist, numPercSamples)
+        self.P90_qoi = cp.Perc(self.qoi_gPCE, 90, dist, numPercSamples)
 
         if isinstance(self.P10_qoi, (list)) and len(self.P10_qoi) == 1:
             self.P10_qoi = self.P10_qoi[0]
             self.P90_qoi = self.P90_qoi[0]
 
         # variance
-        self.Var_qoi = cp.Var(qoi_gPCE, dist)
+        self.Var_qoi = cp.Var(self.qoi_gPCE, dist)
 
         # standard deviation
-        self.StdDev_qoi = cp.Std(qoi_gPCE, dist)
+        self.StdDev_qoi = cp.Std(self.qoi_gPCE, dist)
 
         # sobol indices
-        self.Sobol_m_qoi = cp.Sens_m(qoi_gPCE, dist)
+        self.Sobol_m_qoi = cp.Sens_m(self.qoi_gPCE, dist)
 
-        self.Sobol_m2_qoi = cp.Sens_m2(qoi_gPCE, dist)
+        self.Sobol_m2_qoi = cp.Sens_m2(self.qoi_gPCE, dist)
 
-        self.Sobol_t_qoi = cp.Sens_t(qoi_gPCE, dist)
+        self.Sobol_t_qoi = cp.Sens_t(self.qoi_gPCE, dist)
 
     def printResults(self, timestep=-1, printAllTimeSteps=False):
         resultTable = []

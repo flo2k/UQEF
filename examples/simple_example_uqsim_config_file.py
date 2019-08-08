@@ -9,14 +9,10 @@ import matplotlib
 matplotlib.use('Agg')
 
 # numerical stuff
-import chaospy as cp
 import uqef
 
 # instantiate UQsim
 uqsim = uqef.UQsim()
-
-# parsing args:
-uqsim.parse_args()
 
 # change args locally
 uqsim.args.analyse_runtime = True
