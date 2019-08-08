@@ -8,9 +8,9 @@
     },
     {
       "name": "uncertain_param_2",
-      "distribution": "Normal",
-      "mu": 6,
-      "sigma": 0.1
+      "distribution": "Uniform",
+      "lower": 2,
+      "upper": 6
     }
   ]
 }

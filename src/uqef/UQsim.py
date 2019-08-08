@@ -203,7 +203,7 @@ class UQsim(object):
                         for p in cp_dist_signature.parameters:
                             dist_parameters_values.append(parameter_config[p])
 
-                        self.simulationNodes.setDist(parameter_config["name"], getattr(cp, "Normal")(*dist_parameters_values))
+                        self.simulationNodes.setDist(parameter_config["name"], getattr(cp, parameter_config["distribution"])(*dist_parameters_values))
 
     def setup_model(self):
         model_generator.model = self.models[self.args.model]
