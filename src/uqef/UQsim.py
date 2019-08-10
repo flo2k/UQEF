@@ -53,6 +53,7 @@ class UQsim(object):
         self._init_parser()
 
         self.args = None
+        self.configuration_object = None
         self.parse_args()
 
         if self.args.uqsim_restore_from_file:
@@ -75,7 +76,6 @@ class UQsim(object):
             self.solver = None
             self.statistic = None
             self.runtime_statistic = None
-
             self.__restored = False
 
     def __del__(self):
@@ -139,6 +139,8 @@ class UQsim(object):
     def parse_args(self):
         self.args = self.parser.parse_args()
 
+        self.setup_configuration_object()
+
         # smoke test
         if self.args.smoketest is True:
             print("smoke test passed: exit!")
@@ -177,33 +179,39 @@ class UQsim(object):
         if self.is_master():
             print("set num cores to: {}".format(self.args.num_cores))
 
+    def setup_configuration_object(self):
+        if self.args.config_file:
+            with open(self.args.config_file) as f:
+                if self.is_master():
+                    print("Loading config_file from {}".format(self.args.config_file))
+                self.configuration_object = json.load(f)
+                if self.is_master():
+                    print(self.configuration_object)
+
     def setup_nodes(self, node_names):
         self.simulationNodes = uqef.nodes.Nodes(node_names)
 
     def setup_nodes_via_config_file(self):
-        if self.is_master() and self.args.config_file:
+        if self.is_master() and self.configuration_object is not None:
             print("Config nodes via config file: {}".format(self.args.config_file))
 
-            with open(self.args.config_file) as f:
-                configuration_object = json.load(f)
+            # node names
+            node_names = []
+            for parameter_config in self.configuration_object["parameters"]:
+                node_names.append(parameter_config["name"])
+            self.setup_nodes(node_names)
 
-                # node names
-                node_names = []
-                for parameter_config in configuration_object["parameters"]:
-                    node_names.append(parameter_config["name"])
-                self.setup_nodes(node_names)
+            # node values and distributions -> automatically maps dists and their parameters by reflection mechanisms
+            for parameter_config in self.configuration_object["parameters"]:
+                if parameter_config["distribution"] == "None":
+                    self.simulationNodes.setValue(parameter_config["name"], parameter_config["mu"])
+                else:
+                    cp_dist_signature = inspect.signature(getattr(cp, parameter_config["distribution"]))
+                    dist_parameters_values = []
+                    for p in cp_dist_signature.parameters:
+                        dist_parameters_values.append(parameter_config[p])
 
-                # node values and distributions -> automatically maps dists and their parameters by reflection mechanisms
-                for parameter_config in configuration_object["parameters"]:
-                    if parameter_config["distribution"] == "None":
-                        self.simulationNodes.setValue(parameter_config["name"], parameter_config["mu"])
-                    else:
-                        cp_dist_signature = inspect.signature(getattr(cp, parameter_config["distribution"]))
-                        dist_parameters_values = []
-                        for p in cp_dist_signature.parameters:
-                            dist_parameters_values.append(parameter_config[p])
-
-                        self.simulationNodes.setDist(parameter_config["name"], getattr(cp, parameter_config["distribution"])(*dist_parameters_values))
+                    self.simulationNodes.setDist(parameter_config["name"], getattr(cp, parameter_config["distribution"])(*dist_parameters_values))
 
     def setup_model(self):
         model_generator.model = self.models[self.args.model]
@@ -229,11 +237,11 @@ class UQsim(object):
             simulations = {
                 "mc"      : (lambda: uqef.simulation.McSimulation(self.solver, self.args.mc_numevaluations, self.args.sc_p_order,
                                                                   self.args.regression))
-               ,"saltelli": (lambda: uqef.simulation.SaltelliSimulation(self.solver, self.args.mc_numevaluations, self.args.sc_p_order,
-                                                                        self.args.regression))
                ,"sc"      : (lambda: uqef.simulation.ScSimulation(self.solver, self.args.sc_q_order, self.args.sc_p_order,
                                                                   self.args.sc_quadrature_rule, self.args.sc_sparse_quadrature,
                                                                   self.args.regression))
+               ,"saltelli": (lambda: uqef.simulation.SaltelliSimulation(self.solver, self.args.mc_numevaluations, self.args.sc_p_order,
+                                                                        self.args.regression))
             }
             self.simulation = simulations[self.args.uq_method]()
 
@@ -331,14 +339,14 @@ class UQsim(object):
             if self.args.analyse_runtime is True and self.args.model != "runtime":
                 print(self.runtime_statistic.printResults())
 
-    def plot_statistics(self):
+    def plot_statistics(self, display=False):
         if self.is_master() and self.args.disable_statistics is False:
             print("generate plots...")
             fileName = self.simulation.name
-            self.statistic.plotResults(fileName=fileName, directory=self.args.outputResultDir, display=False)
+            self.statistic.plotResults(fileName=fileName, directory=self.args.outputResultDir, display=display)
 
             if self.args.analyse_runtime is True and self.args.model != "runtime":
-                self.runtime_statistic.plotResults(fileName=fileName, directory=self.args.outputResultDir, display=False)
+                self.runtime_statistic.plotResults(fileName=fileName, directory=self.args.outputResultDir, display=display)
 
     def save_statistics(self):
         if self.is_master() and self.args.disable_statistics is False:
