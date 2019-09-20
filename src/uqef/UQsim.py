@@ -106,7 +106,7 @@ class UQsim(object):
         self.parser.add_argument('--parallel'                  , action='store_true', default=False)
         self.parser.add_argument('--num_cores'                 , type=int, default=multiprocessing.cpu_count())
         self.parser.add_argument('--mpi'                       , action='store_true')
-        self.parser.add_argument('--mpi_method'                , default="new")  # new (MpiPoolSolver), old (MpiPoolSolverOld)
+        self.parser.add_argument('--mpi_method'                , default="new")  # new (MpiPoolSolver), old (MpiPoolSolverOld): TODO: rename to MpiSolver, MpiPoolSolver
         self.parser.add_argument('--mpi_combined_parallel'     , action='store_true', default=False)
 
         self.parser.add_argument('--model'                     , default="testmodel")
@@ -154,6 +154,7 @@ class UQsim(object):
             self.restore_from_file()
             self.__restored = True
         if not self.__restored:
+            self.setup_configuration_object()
             self.setup_nodes_via_config_file()
             self.setup_path()
             self.setup_model()
@@ -180,7 +181,7 @@ class UQsim(object):
             print("set num cores to: {}".format(self.args.num_cores))
 
     def setup_configuration_object(self):
-        if self.args.config_file:
+        if self.configuration_object is None and self.args.config_file:
             with open(self.args.config_file) as f:
                 if self.is_master():
                     print("Loading config_file from {}".format(self.args.config_file))
