@@ -205,7 +205,7 @@ class UQsim(object):
             # node values and distributions -> automatically maps dists and their parameters by reflection mechanisms
             for parameter_config in self.configuration_object["parameters"]:
                 if parameter_config["distribution"] == "None":
-                    self.simulationNodes.setValue(parameter_config["name"], parameter_config["mu"])
+                    self.simulationNodes.setValue(parameter_config["name"], parameter_config["default"])
                 else:
                     cp_dist_signature = inspect.signature(getattr(cp, parameter_config["distribution"]))
                     dist_parameters_values = []
