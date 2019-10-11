@@ -1,5 +1,5 @@
 """
-MpiSolverOld uses traditional MPI mechanism (scatter/gather) to distribute the work and collect the results. It also
+MpiSolver uses traditional MPI mechanism (scatter/gather) to distribute the work and collect the results. It also
 supports a hybrid approach with combined thread parallelisation.
 
 @author: Florian Kuenzner
@@ -41,9 +41,9 @@ def _parallelSolve(model_generator, i_s, p_s):
     return result
 
 
-class MpiSolverOld(Solver):
+class MpiSolver(Solver):
     """
-    MpiPoolSolverOld solves the work packages in parallel using a MPI
+    MpiSolver solves the work packages in parallel using a MPI
     """
 
     def __init__(self, model_generator, mpi_chunksize=1, unordered=False, normaliseParams=False, combinedParallel=False, num_cores=1):
@@ -108,7 +108,7 @@ class MpiSolverOld(Solver):
 
             # generate chunks and ensure to be able to restore the original order
             if strategy == schedule.Strategy.DYNAMIC:
-                raise NotImplementedError("Strategy.DYNAMIC not supported by MpiSolverOld!")
+                raise NotImplementedError("Strategy.DYNAMIC not supported by MpiSolver!")
             elif strategy in [schedule.Strategy.FIXED_ALTERNATE, schedule.Strategy.FIXED_LINEAR]:
                 self.solverTimes.num_work_packages = len(self.work_package_indexes)
                 self.solverTimes.parallel_solvers_per_work_package = np.array([1] * self.size)

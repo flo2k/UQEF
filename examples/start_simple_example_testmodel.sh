@@ -48,7 +48,7 @@ $python_cmd simple_example_testmodel.py \
                                     --parallel
 check
 
-# MpiPoolSolver - SC
+# MpiSolverSolver - SC
 mpiexec -n 4 $python_cmd simple_example_testmodel.py \
                                     --model "testmodel" \
                                     --uq_method "sc" --sc_q_order $sc_q_order --sc_p_order $sc_p_order \
@@ -56,7 +56,7 @@ mpiexec -n 4 $python_cmd simple_example_testmodel.py \
                                     --mpi
 check
 
-# MpiPoolSolver - MC
+# MpiSolverSolver - MC
 mpiexec -n 4 $python_cmd simple_example_testmodel.py \
                                     --model "testmodel" \
                                     --uq_method "mc" --mc_numevaluations $mc_num_samples \
@@ -64,34 +64,34 @@ mpiexec -n 4 $python_cmd simple_example_testmodel.py \
                                     --mpi
 check
 
-# MpiSolverOld - SWP - SC
+# MpiSolver - SWP - SC
 mpiexec -n 4 $python_cmd simple_example_testmodel.py \
                                     --model "testmodel" \
                                     --uq_method "sc" --sc_q_order $sc_q_order --sc_p_order $sc_p_order \
                                     --uncertain "all" \
-                                    --mpi --mpi_method "old"
+                                    --mpi --mpi_method "MpiSolver"
 check
 
-# MpiSolverOld - SWP - MC
+# MpiSolver - SWP - MC
 mpiexec -n 4 $python_cmd simple_example_testmodel.py \
                                     --model "testmodel" \
                                     --uq_method "mc" --mc_numevaluations $mc_num_samples \
                                     --uncertain "all" \
-                                    --mpi --mpi_method "old"
+                                    --mpi --mpi_method "MpiSolver"
 check
 
-# MpiSolverOld - SWPT - SC
+# MpiSolver - SWPT - SC
 mpiexec -n 4 $python_cmd simple_example_testmodel.py \
                                     --model "testmodel" \
                                     --uq_method "sc" --sc_q_order $sc_q_order --sc_p_order $sc_p_order \
                                     --uncertain "all" \
-                                    --mpi --mpi_method "old" --mpi_combined_parallel
+                                    --mpi --mpi_method "MpiSolver" --mpi_combined_parallel
 check
 
-# MpiSolverOld - SWPT - MC
+# MpiSolver - SWPT - MC
 mpiexec -n 4 $python_cmd simple_example_testmodel.py \
                                     --model "testmodel" \
                                     --uq_method "mc" --mc_numevaluations $mc_num_samples \
                                     --uncertain "all" \
-                                    --mpi --mpi_method "old" --mpi_combined_parallel
+                                    --mpi --mpi_method "MpiSolver" --mpi_combined_parallel
 check

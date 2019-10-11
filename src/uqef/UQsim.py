@@ -92,29 +92,26 @@ class UQsim(object):
 
         self.parser = argparse.ArgumentParser(description='Uncertainty Quantification simulation.')
 
+        # Smoketest: test run of script to verify environment
         self.parser.add_argument('--smoketest'                 , action='store_true', default=False)
 
+        # UQsim load/restore
         self.parser.add_argument('--uqsim_file'                , default="uqsim.saved")
         self.parser.add_argument('--uqsim_store_to_file'       , action='store_true', default=False)
         self.parser.add_argument('--uqsim_restore_from_file'   , action='store_true', default=False)
         self.parser.add_argument('--disable_statistics'        , action='store_true', default=False)
 
+        # Model and result directories
         self.parser.add_argument('-im', '--inputModelDir'      , default=".")
         self.parser.add_argument('-om', '--outputModelDir'     , default=".")
         self.parser.add_argument('-or', '--outputResultDir'    , default=".")
 
-        self.parser.add_argument('--parallel'                  , action='store_true', default=False)
-        self.parser.add_argument('--num_cores'                 , type=int, default=multiprocessing.cpu_count())
-        self.parser.add_argument('--mpi'                       , action='store_true')
-        self.parser.add_argument('--mpi_method'                , default="new")  # new (MpiPoolSolver), old (MpiPoolSolverOld): TODO: rename to MpiSolver, MpiPoolSolver
-        self.parser.add_argument('--mpi_combined_parallel'     , action='store_true', default=False)
-
+        # Model settings
         self.parser.add_argument('--model'                     , default="testmodel")
         self.parser.add_argument('--model_variant'             , type=int, default=1)
+        self.parser.add_argument('--simulate_wait'             , action='store_true', default=False)
 
-        self.parser.add_argument('--chunksize'                 , type=int, default=1)
-        self.parser.add_argument('--mpi_chunksize'             , type=int, default=1)
-
+        # UQ method and uncertain parameter settings
         self.parser.add_argument('--uncertain'                 , default='all')
         self.parser.add_argument('--uq_method'                 , default="sc")  # sc, mc, saltelli
         self.parser.add_argument('--regression'                , action='store_true', default=False)
@@ -125,13 +122,25 @@ class UQsim(object):
         self.parser.add_argument('--sc_quadrature_rule'        , default='g')
         self.parser.add_argument('--config_file')
 
+        # Solver settings
+        self.parser.add_argument('--parallel'                  , action='store_true', default=False)
+        self.parser.add_argument('--num_cores'                 , type=int, default=multiprocessing.cpu_count())
+        self.parser.add_argument('--mpi'                       , action='store_true')
+        self.parser.add_argument('--mpi_method'                , default="MpiPoolSolver")  # MpiPoolSolver: DWP, MpiSolver: SWP, SWPT
+        self.parser.add_argument('--mpi_combined_parallel'     , action='store_true', default=False)
+
+        # Chunk parameters
+        self.parser.add_argument('--chunksize'                 , type=int, default=1)
+        self.parser.add_argument('--mpi_chunksize'             , type=int, default=1)
+
+        # Runtime analysis and optimisation parameters
         self.parser.add_argument('--analyse_runtime'           , action='store_true', default=False)
         self.parser.add_argument('--opt_runtime'               , action='store_true', default=False)
         self.parser.add_argument('--opt_runtime_gpce_Dir'      , default=".")
         self.parser.add_argument('--opt_type'                  , default="WORK_PACKAGE")    # WORK_LIST WORK_PACKAGE
         self.parser.add_argument('--opt_algorithm'             , default="LPT")             # FCFS LPT SPT MULTIFIT
         self.parser.add_argument('--opt_strategy'              , default="DYNAMIC")         # FIXED_ALTERNATE FIXED_LINEAR DYNAMIC
-        self.parser.add_argument('--simulate_wait'             , action='store_true', default=False)
+
 
     def is_master(self):
         return self.args.mpi is False or (self.args.mpi is True and rank == 0)
@@ -219,12 +228,13 @@ class UQsim(object):
 
     def setup_solver(self):
         if self.args.mpi is True:
-            if self.args.mpi_method == "new":
-                self.solver = uqef.solver.MpiPoolSolver(model_generator, mpi_chunksize=self.args.mpi_chunksize,
-                                                        combinedParallel=self.args.mpi_combined_parallel, num_cores=self.args.num_cores)
-            else:
-                self.solver = uqef.solver.MpiSolverOld(model_generator, mpi_chunksize=self.args.mpi_chunksize,
-                                                       combinedParallel=self.args.mpi_combined_parallel, num_cores=self.args.num_cores)
+            solvers = {
+                "MpiPoolSolver": (lambda: uqef.solver.MpiPoolSolver(model_generator, mpi_chunksize=self.args.mpi_chunksize,
+                                                          combinedParallel=self.args.mpi_combined_parallel, num_cores=self.args.num_cores))
+               ,"MpiSolver"    : (lambda: uqef.solver.MpiSolver(model_generator, mpi_chunksize=self.args.mpi_chunksize,
+                                                         combinedParallel=self.args.mpi_combined_parallel, num_cores=self.args.num_cores))
+            }
+            self.solver = solvers[self.args.mpi_method]()
         elif self.args.parallel:
             self.solver = uqef.solver.ParallelSolver(model_generator, self.args.num_cores)
         else:
@@ -322,8 +332,8 @@ class UQsim(object):
 
     def calc_statistics(self):
         if self.is_master() and self.args.disable_statistics is False:
-            print("calculate statistics...")
             self.statistic = self.statistics[self.args.model]()
+            print("calculate statistics [{}]...".format(type(self.statistic).__name__))
             self.simulation.calculateStatistics(self.statistic, self.simulationNodes, self.runtime_estimator)
 
             if self.args.analyse_runtime is True and self.args.model == "runtime":
