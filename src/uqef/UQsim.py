@@ -340,6 +340,7 @@ class UQsim(object):
                 self.runtime_statistic = self.statistic
             elif self.args.analyse_runtime is True:
                 self.runtime_statistic = self.statistics["runtime"]()
+                print("calculate statistics [{}]...".format(type(self.runtime_statistic).__name__))
                 self.simulation.calculateStatistics(self.runtime_statistic, self.simulationNodes, self.runtime_estimator)
 
     def print_statistics(self):
