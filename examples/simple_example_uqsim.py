@@ -49,3 +49,6 @@ uqsim.calc_statistics()
 uqsim.print_statistics()
 uqsim.plot_statistics()
 uqsim.save_statistics()
+
+# tear down
+uqsim.tear_down()

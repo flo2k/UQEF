@@ -84,8 +84,6 @@ class UQsim(object):
 
         sys.stdout.flush()
 
-        self.store_to_file()
-
     def _init_parser(self):
         if rank == 0:
             print("parsing args...")
@@ -141,9 +139,11 @@ class UQsim(object):
         self.parser.add_argument('--opt_algorithm'             , default="LPT")             # FCFS LPT SPT MULTIFIT
         self.parser.add_argument('--opt_strategy'              , default="DYNAMIC")         # FIXED_ALTERNATE FIXED_LINEAR DYNAMIC
 
-
     def is_master(self):
         return self.args.mpi is False or (self.args.mpi is True and rank == 0)
+
+    def is_restored(self):
+        return self.__restored
 
     def parse_args(self):
         self.args = self.parser.parse_args()
@@ -159,10 +159,10 @@ class UQsim(object):
             print("rank: {} is master!".format(rank))
 
     def setup(self):
-        if not self.__restored and self.args.uqsim_restore_from_file is True: # for locally configured restore
+        if not self.is_restored() and self.args.uqsim_restore_from_file is True: # for locally configured restore
             self.restore_from_file()
             self.__restored = True
-        if not self.__restored:
+        if not self.is_restored():
             self.setup_configuration_object()
             self.setup_nodes_via_config_file()
             self.setup_path()
@@ -288,7 +288,7 @@ class UQsim(object):
                 print("runtime optimisation disbled...")
 
     def simulate(self):
-        if self.__restored is False:
+        if self.is_restored() is False:
             if self.is_master():
                 print("start the simulation...")
                 self.solver.init()
@@ -376,6 +376,9 @@ class UQsim(object):
                 #    statistics.printCsv(fileName=fileName, directory=outputResultDir)
                 self.runtime_statistic.saveRuntimeData(fileName=fileName, directory=self.args.outputResultDir)
 
+    def tear_down(self):
+        self.store_to_file()
+
     @staticmethod
     def load_from_file(file_name):
         with open(file_name, 'rb') as f:
@@ -387,10 +390,11 @@ class UQsim(object):
 
     def store_to_file(self):
         if self.args.uqsim_store_to_file:
+            print("UQsim: save to file: {}".format(self.args.uqsim_file))
             self.save_to_file(self.args.uqsim_file)
 
     def restore_from_file(self):
         if self.args.uqsim_restore_from_file:
-            print("Restore from file: {}".format(self.args.uqsim_restore_from_file))
+            print("UQsim: restore from file: {}".format(self.args.uqsim_restore_from_file))
             self.__dict__.update(self.load_from_file(self.args.uqsim_file).__dict__)
 
