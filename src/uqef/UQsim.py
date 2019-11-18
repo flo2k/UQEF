@@ -97,6 +97,7 @@ class UQsim(object):
         self.parser.add_argument('--uqsim_file'                , default="uqsim.saved")
         self.parser.add_argument('--uqsim_store_to_file'       , action='store_true', default=False)
         self.parser.add_argument('--uqsim_restore_from_file'   , action='store_true', default=False)
+        self.parser.add_argument('--disable_recalc_statistics' , action='store_true', default=False)
         self.parser.add_argument('--disable_statistics'        , action='store_true', default=False)
 
         # Model and result directories
@@ -331,7 +332,7 @@ class UQsim(object):
                 print("solver time: {} sec".format(solver_time))
 
     def calc_statistics(self):
-        if self.is_master() and self.args.disable_statistics is False:
+        if self.is_master() and (self.args.disable_statistics is False or self.args.disable_recalc_statistics is False):
             self.statistic = self.statistics[self.args.model]()
             print("calculate statistics [{}]...".format(type(self.statistic).__name__))
             self.simulation.calculateStatistics(self.statistic, self.simulationNodes, self.runtime_estimator)
