@@ -378,7 +378,8 @@ class UQsim(object):
                 self.runtime_statistic.saveRuntimeData(fileName=fileName, directory=self.args.outputResultDir)
 
     def tear_down(self):
-        self.store_to_file()
+        if self.is_master():
+            self.store_to_file()
 
     @staticmethod
     def load_from_file(file_name):
@@ -390,7 +391,7 @@ class UQsim(object):
             dill.dump(self, f)
 
     def store_to_file(self):
-        if self.args.uqsim_store_to_file:
+        if self.is_master() and self.args.uqsim_store_to_file:
             print("UQsim: save to file: {}".format(self.args.uqsim_file))
             self.save_to_file(self.args.uqsim_file)
 
