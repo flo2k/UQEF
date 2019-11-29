@@ -46,7 +46,7 @@ parser.add_argument('-or','--outputResultDir' , default=".")
 parser.add_argument('--parallel'              , action='store_true', default=False)
 parser.add_argument('--num_cores'             , type=int, default=multiprocessing.cpu_count())
 parser.add_argument('--mpi'                   , action='store_true')
-parser.add_argument('--mpi_method'            , default="new")  # new (MpiPoolSolver), old (MpiPoolSolverOld)
+parser.add_argument('--mpi_method'            , default="MpiPoolSolver")  # MpiPoolSolver: DWP, MpiSolver: SWP, SWPT
 parser.add_argument('--mpi_combined_parallel' , action='store_true', default=False)
 
 parser.add_argument('--model'                 , default="testmodel")
@@ -56,6 +56,7 @@ parser.add_argument('--mpi_chunksize'         , type=int, default=1)
 
 parser.add_argument('--uncertain'             , default='all')  # all, uncertain_param_1, uncertain_param_2
 parser.add_argument('--uq_method'             , default="sc")  # sc, mc
+parser.add_argument('--regression'            , action='store_true', default=False)
 parser.add_argument('--mc_numevaluations'     , type=int, default=27)
 parser.add_argument('--sc_q_order'            , type=int, default=2)  # number of collocation points in each direction (Q)
 parser.add_argument('--sc_p_order'            , type=int, default=1)  # number of terms in PCE (N)
@@ -115,7 +116,7 @@ if mpi == False or (mpi == True and rank == 0):
     uncertain_param_2_std = 0.1
 
     nodeNames = ["uncertain_param_1", "uncertain_param_2"]
-    simulationNodes = uqef.simulation.Nodes(nodeNames)
+    simulationNodes = uqef.nodes.Nodes(nodeNames)
 
     if args.uncertain == "all":
         simulationNodes.setDist("uncertain_param_1", cp.Normal(uncertain_param_1, uncertain_param_1_std))
@@ -137,7 +138,7 @@ if mpi == False or (mpi == True and rank == 0):
 ### initialise model
 #####################################
 
-def modelGenerator():
+def model_generator():
     models = {
         "testmodel": (lambda: uqef.model.TestModel())
     }
@@ -149,16 +150,16 @@ def modelGenerator():
 #####################################
 
 if mpi == True:
-    if args.mpi_method == "new":
-        solver = uqef.solver.MpiPoolSolver(modelGenerator, mpi_chunksize=args.mpi_chunksize,
+    if args.mpi_method == "MpiPoolSolver":
+        solver = uqef.solver.MpiPoolSolver(model_generator, mpi_chunksize=args.mpi_chunksize,
                                            combinedParallel=args.mpi_combined_parallel, num_cores=num_cores)
     else:
-        solver = uqef.solver.MpiSolverOld(modelGenerator, mpi_chunksize=args.mpi_chunksize,
+        solver = uqef.solver.MpiSolver(model_generator, mpi_chunksize=args.mpi_chunksize,
                                               combinedParallel=args.mpi_combined_parallel, num_cores=num_cores)
 elif args.parallel:
-    solver = uqef.solver.ParallelSolver(modelGenerator, num_cores)
+    solver = uqef.solver.ParallelSolver(model_generator, num_cores)
 else:
-    solver = uqef.solver.LinearSolver(modelGenerator)
+    solver = uqef.solver.LinearSolver(model_generator)
 
 if mpi == False or (mpi == True and rank == 0):
     print("solver-setup: {}".format(solver.getSetup()))
@@ -168,8 +169,8 @@ if mpi == False or (mpi == True and rank == 0):
 #####################################
 if mpi == False or (mpi == True and rank == 0):
     simulations = {
-        "mc": (lambda: uqef.simulation.McSimulation(solver, args.mc_numevaluations))
-       ,"sc": (lambda: uqef.simulation.ScSimulation(solver, args.sc_q_order, args.sc_p_order, args.sc_quadrature_rule, args.sc_sparse_quadrature))
+        "mc": (lambda: uqef.simulation.McSimulation(solver, args.mc_numevaluations, args.sc_p_order, args.regression))
+       ,"sc": (lambda: uqef.simulation.ScSimulation(solver, args.sc_q_order, args.sc_p_order, args.sc_quadrature_rule, args.sc_sparse_quadrature, args.regression))
     }
     simulation = simulations[args.uq_method]()
 

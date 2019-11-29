@@ -52,6 +52,10 @@ class Nodes(object):
         numDists = len(self.dists)
         
         assert (numValues + numDists) == numRegisteredNodes, "not enough values registered"
+
+    def getDistNodeNames(self):
+        distNodeNames = [nodeName for nodeName in self.nodeNames if nodeName in self.dists]
+        return distNodeNames
     
     def generateNodesForMC(self, numSamples):
         if self.numSamplesOrScDim == numSamples:
@@ -172,7 +176,7 @@ class Nodes(object):
         #resultTable.append(self.nodeNames)
 
         nodes = self.nodes.T
-        for i in range(0, len(self.nodes)):
+        for i in range(0, len(nodes)):
             resultTable.append(nodes[i])
 
         str = tabulate(resultTable, headers=self.nodeNames, floatfmt="f") + "\n"

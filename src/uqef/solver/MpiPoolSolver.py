@@ -26,11 +26,11 @@ import more_itertools
 from joblib import Parallel, delayed
 
 
-def _parallelSolve(modelGenerator, i_s, p_s):
+def _parallelSolve(model_generator, i_s, p_s):
     #print "i_s: " + str(i_s)
     #print "p_s: " + str(p_s)
 
-    model = modelGenerator()
+    model = model_generator()
     model.prepare()
     
 #     rank = MPI.COMM_WORLD.Get_rank()
@@ -43,15 +43,15 @@ def _parallelSolve(modelGenerator, i_s, p_s):
     return result
 
 
-def _combinedParallelSolve(modelGenerator, i_s, p_s, num_cores):
+def _combinedParallelSolve(model_generator, i_s, p_s, num_cores):
     #print "c_i_s: " + str(i_s)
     #print "c_p_s: " + str(p_s)
 
     #num_cores = multiprocessing.cpu_count()
-#    parallelSolver = ParallelSolver(modelGenerator, num_cores)
+#    parallelSolver = ParallelSolver(model_generator, num_cores)
 
     paralleliser = Parallel(n_jobs=num_cores, verbose=5)
-    results = paralleliser(delayed(_parallelSolve)(modelGenerator, [i], [p]) for (i, p) in zip(i_s, p_s))
+    results = paralleliser(delayed(_parallelSolve)(model_generator, [i], [p]) for (i, p) in zip(i_s, p_s))
 
     #print "results: " + str(np.asarray(results).shape)
 
@@ -65,17 +65,17 @@ class MpiPoolSolver(Solver):
     MpiPoolSolver solves the work packages in parallel using a MPI pool
     """
 
-    def __init__(self, modelGenerator, mpi_chunksize=1, unordered=False, normaliseParams=False, combinedParallel=False, num_cores=1):
+    def __init__(self, model_generator, mpi_chunksize=1, unordered=False, normaliseParams=False, combinedParallel=False, num_cores=1):
         Solver.__init__(self)
 
         # behavior
-        self.modelGenerator = modelGenerator
+        self.model_generator = model_generator
         self.mpi_chunksize = mpi_chunksize
         self.unordered = unordered
         self.normaliseParams = normaliseParams
         self.combinedParallel = combinedParallel
         
-        self.infoModel = modelGenerator()
+        self.infoModel = model_generator()
         
         self.size = MPI.COMM_WORLD.Get_size()
         self.rank = MPI.COMM_WORLD.Get_rank()
@@ -167,10 +167,10 @@ class MpiPoolSolver(Solver):
                 solver_time_start = time.time()
 
                 if self.combinedParallel == False:
-                    chunk_results_it = executor.map(_parallelSolve, [self.modelGenerator] * len(i_s_chunk), i_s_chunk, parameterChunks,
+                    chunk_results_it = executor.map(_parallelSolve, [self.model_generator] * len(i_s_chunk), i_s_chunk, parameterChunks,
                                                     chunksize=self.mpi_chunksize, unordered=self.unordered)
                 else:
-                    chunk_results_it = executor.map(_combinedParallelSolve, [self.modelGenerator] * len(i_s_chunk), i_s_chunk,
+                    chunk_results_it = executor.map(_combinedParallelSolve, [self.model_generator] * len(i_s_chunk), i_s_chunk,
                                                     parameterChunks, [self.numCores]*len(i_s_chunk),
                                                     chunksize=self.mpi_chunksize, unordered=self.unordered)
 

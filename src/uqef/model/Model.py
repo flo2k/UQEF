@@ -29,11 +29,11 @@ class Model(object):
         raise NotImplementedError("Should have implemented this")
 
     @abstractmethod
-    def normaliseParameter(self, parameters):
+    def normaliseParameter(self, parameter):
         raise NotImplementedError("Should have implemented this")
 
     @abstractmethod
-    def run(self, i, parameter):
+    def run(self, i_s, parameters):
         raise NotImplementedError("Should have implemented this")
 
     @abstractmethod

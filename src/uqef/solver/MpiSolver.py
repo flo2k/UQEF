@@ -1,5 +1,5 @@
 """
-MpiSolverOld uses traditional MPI mechanism (scatter/gather) to distribute the work and collect the results. It also
+MpiSolver uses traditional MPI mechanism (scatter/gather) to distribute the work and collect the results. It also
 supports a hybrid approach with combined thread parallelisation.
 
 @author: Florian Kuenzner
@@ -24,11 +24,11 @@ from joblib import Parallel, delayed
 import time
 
 
-def _parallelSolve(modelGenerator, i_s, p_s):
+def _parallelSolve(model_generator, i_s, p_s):
     #print "i_s: " + str(i_s)
     #print "p_s: " + str(p_s)
 
-    model = modelGenerator()
+    model = model_generator()
     model.prepare()
 
     #     rank = MPI.COMM_WORLD.Get_rank()
@@ -41,22 +41,22 @@ def _parallelSolve(modelGenerator, i_s, p_s):
     return result
 
 
-class MpiSolverOld(Solver):
+class MpiSolver(Solver):
     """
-    MpiPoolSolverOld solves the work packages in parallel using a MPI
+    MpiSolver solves the work packages in parallel using a MPI
     """
 
-    def __init__(self, modelGenerator, mpi_chunksize=1, unordered=False, normaliseParams=False, combinedParallel=False, num_cores=1):
+    def __init__(self, model_generator, mpi_chunksize=1, unordered=False, normaliseParams=False, combinedParallel=False, num_cores=1):
         Solver.__init__(self)
 
         # behavior
-        self.modelGenerator = modelGenerator
+        self.model_generator = model_generator
         self.mpi_chunksize = mpi_chunksize
         self.unordered = unordered
         self.normaliseParams = normaliseParams
         self.combinedParallel = combinedParallel
 
-        self.infoModel = modelGenerator()
+        self.infoModel = model_generator()
 
         self.size = MPI.COMM_WORLD.Get_size()
         self.rank = MPI.COMM_WORLD.Get_rank()
@@ -108,7 +108,7 @@ class MpiSolverOld(Solver):
 
             # generate chunks and ensure to be able to restore the original order
             if strategy == schedule.Strategy.DYNAMIC:
-                raise NotImplementedError("Strategy.DYNAMIC not supported by MpiSolverOld!")
+                raise NotImplementedError("Strategy.DYNAMIC not supported by MpiSolver!")
             elif strategy in [schedule.Strategy.FIXED_ALTERNATE, schedule.Strategy.FIXED_LINEAR]:
                 self.solverTimes.num_work_packages = len(self.work_package_indexes)
                 self.solverTimes.parallel_solvers_per_work_package = np.array([1] * self.size)
@@ -148,9 +148,9 @@ class MpiSolverOld(Solver):
 
         if self.combinedParallel:
             chunk_results = Parallel(n_jobs=self.numCores, verbose=5, backend="threading")(
-                delayed(_parallelSolve)(self.modelGenerator, [i_s], [p_s]) for i_s, p_s in zip(i_s, nodes))
+                delayed(_parallelSolve)(self.model_generator, [i_s], [p_s]) for i_s, p_s in zip(i_s, nodes))
         else:
-            chunk_results = [_parallelSolve(self.modelGenerator, [i_s], [p_s]) for i_s, p_s in zip(i_s, nodes)]
+            chunk_results = [_parallelSolve(self.model_generator, [i_s], [p_s]) for i_s, p_s in zip(i_s, nodes)]
 
         # gather
         if self.rank == 0: gather_time_start = time.time()

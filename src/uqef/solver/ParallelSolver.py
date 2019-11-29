@@ -16,8 +16,8 @@ from joblib import Parallel, delayed
 import time
 
 
-def _parallelSolve(modelGenerator, i_s, p_s):
-    model = modelGenerator()
+def _parallelSolve(model_generator, i_s, p_s):
+    model = model_generator()
     model.prepare()
 
     results = model.run(i_s, p_s)
@@ -34,18 +34,18 @@ class ParallelSolver(Solver):
     ParallelSolver solves the work packages in parallel using a pool from joblib
     """
 
-    def __init__(self, modelGenerator, numCores, normaliseParams=False):
+    def __init__(self, model_generator, numCores, normaliseParams=False):
         Solver.__init__(self)
 
         # behavior
-        self.modelGenerator = modelGenerator
+        self.model_generator = model_generator
         self.numCores = numCores
         self.normaliseParams = normaliseParams
 
         self.solverTimes.num_work_packages = 1
         self.solverTimes.parallel_solvers_per_work_package = np.array([self.numCores])
 
-        self.infoModel = modelGenerator()
+        self.infoModel = model_generator()
         
     def getSetup(self):
         return "%s using %d cores" % (type(self).__name__, self.numCores)
@@ -131,7 +131,7 @@ class ParallelSolver(Solver):
         # do the simulation
         paralleliser = Parallel(n_jobs=self.numCores, verbose=5, backend="threading")
         solver_time_start = time.time()
-        chunk_results = paralleliser(delayed(_parallelSolve)(self.modelGenerator, i_s, p_s)
+        chunk_results = paralleliser(delayed(_parallelSolve)(self.model_generator, i_s, p_s)
                                for (i_s, p_s) in chunks)
         solver_time_end = time.time()
 
