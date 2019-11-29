@@ -25,10 +25,13 @@ class ScSimulation(Simulation):
         return "%s using q_order=%d and p_order=%d %s" % (type(self).__name__, self.q_order, self.p_order, "with regression" if self.regression else "")
 
     def generateSimulationNodes(self, simulationNodes):
-        nodes, weights = simulationNodes.generateNodesForSC(self.q_order, rule=self.rule, sparse=self.sparse_quadrature)
+        nodes, weights, parameters= simulationNodes.generateNodesForSC(self.q_order, rule=self.rule, sparse=self.sparse_quadrature)
         nodes = nodes.T
         
-        self.parameters = nodes
+        if parameters is not None:
+            self.parameters = parameters.T
+        else:
+            self.parameters = nodes
         self.nodes = nodes
         self.weights = weights
 

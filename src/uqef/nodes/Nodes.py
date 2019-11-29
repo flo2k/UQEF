@@ -32,7 +32,12 @@ class Nodes(object):
         self.weights=[]
         self.nodes=[]
         self.numSamplesOrScDim = None
-        
+
+        self.performTransformation = False
+        self.transformationParameters = {}
+        self.transformationFunctions = {}
+        self.parameters = None
+
     def setValue(self, nodeName, value):
         self.assertNodeName(nodeName)
         
@@ -42,7 +47,14 @@ class Nodes(object):
         self.assertNodeName(nodeName)
         
         self.dists[nodeName] = dist
-    
+
+    def setTransformation(self, nodeName, parametersTuple, transformationFunc):
+        self.assertNodeName(nodeName)
+
+        self.performTransformation = True
+        self.transformationParameters[nodeName] = parametersTuple
+        self.transformationFunctions[nodeName] = transformationFunc
+
     def assertNodeName(self, nodeName):
         assert nodeName in self.nodeNames, "name of node " + nodeName + " not registered."
     
@@ -143,7 +155,19 @@ class Nodes(object):
 
         self.nodes = np.array(nodes)
         self.weights = np.array(self.weights)
-        return self.nodes, self.weights
+
+        if self.performTransformation:
+            transformedNodes = nodes
+            for i in range(0, len(self.nodeNames)):
+                nameOfNode = self.nodeNames[i]
+                if nameOfNode in self.dists:
+                    transformedNodes[orderdDistsNames.index(nameOfNode)] = \
+                        self.transformationFunctions[nameOfNode](transformedNodes[orderdDistsNames.index(nameOfNode)], \
+                                                                 self.transformationParameters[nameOfNode][0], \
+                                                                 self.transformationParameters[nameOfNode][1])
+            self.parameters = np.array(transformedNodes)
+
+        return self.nodes, self.weights, self.parameters
 
     def __save__cpu_affinity(self):
         # Save cpu pinning: This is necessary, because through chaospy.generate_quadrature() -> scipy.linalg.eig_banded
