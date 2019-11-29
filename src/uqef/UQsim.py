@@ -332,7 +332,7 @@ class UQsim(object):
                 print("solver time: {} sec".format(solver_time))
 
     def calc_statistics(self):
-        if self.is_master() and (self.args.disable_statistics is False or self.args.disable_recalc_statistics is False):
+        if self.is_master() and (self.args.disable_statistics is False and self.args.disable_recalc_statistics is False):
             self.statistic = self.statistics[self.args.model]()
             print("calculate statistics [{}]...".format(type(self.statistic).__name__))
             self.simulation.calculateStatistics(self.statistic, self.simulationNodes, self.runtime_estimator)
