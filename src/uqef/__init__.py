@@ -10,4 +10,5 @@ from . import nodes
 from . import model
 from . import simulation
 from . import stat
+from . import util
 from .UQsim import UQsim
