@@ -29,7 +29,7 @@ class TimeMeasurement:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.time_duration.set_end(time.time())
-        print("takes: {}".format(self.time_duration.duration()))
+        print(" takes: {}".format(self.time_duration.duration()))
 
 
 #usage
