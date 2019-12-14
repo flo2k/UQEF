@@ -286,7 +286,7 @@ class UQsim(object):
                 else:
                     print("No runtime estimator found in: {}".format(simulationFileName))
             else:
-                print("runtime optimisation disbled...")
+                print("runtime optimisation disabled...")
 
     def simulate(self):
         if self.is_restored() is False:
@@ -327,9 +327,11 @@ class UQsim(object):
                 self.solver.tearDown()  # stop the solver
 
             if self.is_master():
+                print("simulation done.")
                 solver_time_end = time.time()
                 solver_time = solver_time_end - solver_time_start
                 print("solver time: {} sec".format(solver_time))
+                sys.stdout.flush()
 
     def calc_statistics(self):
         if self.is_master() and (self.args.disable_statistics is False and self.args.disable_recalc_statistics is False):
@@ -380,6 +382,8 @@ class UQsim(object):
     def tear_down(self):
         if self.is_master():
             self.store_to_file()
+
+        sys.stdout.flush()
 
     @staticmethod
     def load_from_file(file_name):
