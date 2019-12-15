@@ -119,6 +119,7 @@ class UQsim(object):
         self.parser.add_argument('--sc_p_order'                , type=int, default=1)  # number of terms in PCE (N)
         self.parser.add_argument('--sc_sparse_quadrature'      , action='store_true', default=False)
         self.parser.add_argument('--sc_quadrature_rule'        , default='g')
+        self.parser.add_argument('--transformToStandardDist', action='store_true', default=False)
         self.parser.add_argument('--config_file')
 
         # Solver settings
@@ -222,7 +223,22 @@ class UQsim(object):
                     for p in cp_dist_signature.parameters:
                         dist_parameters_values.append(parameter_config[p])
 
-                    self.simulationNodes.setDist(parameter_config["name"], getattr(cp, parameter_config["distribution"])(*dist_parameters_values))
+
+                    if self.args.transformToStandardDist:
+                        self.simulationNodes.setDist(parameter_config["name"],
+                                                     getattr(cp, parameter_config["distribution"])())
+
+                        if parameter_config["distribution"] == "Normal":
+                            pass
+                        elif parameter_config["distribution"] == "Uniform":
+                            pass
+                        else:
+                            pass
+
+                    else:
+                        self.simulationNodes.setDist(parameter_config["name"],
+                                                     getattr(cp, parameter_config["distribution"])(
+                                                         *dist_parameters_values))
 
     def setup_model(self):
         model_generator.model = self.models[self.args.model]

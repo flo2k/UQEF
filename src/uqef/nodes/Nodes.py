@@ -107,7 +107,11 @@ class Nodes(object):
 
         self.nodes = np.array(nodes)
         self.weights = np.array(self.weights) #MC has no weights, but after generation, we want a array
-        return self.nodes
+
+        if self.performTransformation:
+            self.parameters = self.transformParameters(orderdDistsNames, nodes)
+
+        return self.nodes, self.parameters
     
     def generateNodesForSC(self, numCollocationPointsPerDim, rule="G", sparse=False):
 
@@ -157,17 +161,20 @@ class Nodes(object):
         self.weights = np.array(self.weights)
 
         if self.performTransformation:
-            transformedNodes = nodes
-            for i in range(0, len(self.nodeNames)):
-                nameOfNode = self.nodeNames[i]
-                if nameOfNode in self.dists:
-                    transformedNodes[orderdDistsNames.index(nameOfNode)] = \
-                        self.transformationFunctions[nameOfNode](transformedNodes[orderdDistsNames.index(nameOfNode)], \
-                                                                 self.transformationParameters[nameOfNode][0], \
-                                                                 self.transformationParameters[nameOfNode][1])
-            self.parameters = np.array(transformedNodes)
+            self.parameters = self.transformParameters(orderdDistsNames, nodes)
 
         return self.nodes, self.weights, self.parameters
+
+    def transformParameters(self, orderdDistsNames, nodes):
+        transformedNodes = nodes
+        for i in range(0, len(self.nodeNames)):
+            nameOfNode = self.nodeNames[i]
+            if nameOfNode in self.dists:
+                transformedNodes[orderdDistsNames.index(nameOfNode)] = \
+                    self.transformationFunctions[nameOfNode](transformedNodes[orderdDistsNames.index(nameOfNode)], \
+                                                             self.transformationParameters[nameOfNode][0], \
+                                                             self.transformationParameters[nameOfNode][1])
+        return np.array(transformedNodes)
 
     def __save__cpu_affinity(self):
         # Save cpu pinning: This is necessary, because through chaospy.generate_quadrature() -> scipy.linalg.eig_banded

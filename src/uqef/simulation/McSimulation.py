@@ -23,9 +23,14 @@ class McSimulation(Simulation):
         return "%s running %d evaluations %s" % (type(self).__name__, self.numEvaluations, "with regression" if self.regression else "")
 
     def generateSimulationNodes(self, simulationNodes):
-        nodes = simulationNodes.generateNodesForMC(self.numEvaluations)
+        nodes, parameters = simulationNodes.generateNodesForMC(self.numEvaluations)
         nodes = nodes.T
-        self.parameters = nodes
+
+        if parameters is not None:
+            self.parameters = parameters.T
+        else:
+            self.parameters = nodes
+        self.nodes = nodes
 
     def calculateStatistics(self, statistics, simulationNodes, original_runtime_estimator=None):
         model_results = self.solver.results
