@@ -354,9 +354,15 @@ class UQsim(object):
             if self.args.analyse_runtime is True and self.args.model != "runtime":
                 print(self.runtime_statistic.printResults())
 
+    def plot_nodes(self, display=False):
+        if self.is_master() and self.args.disable_statistics is False:
+            print("generate node plots...")
+            fileName = self.simulation.name
+            self.simulationNodes.plotDists(fileName=fileName, directory=self.args.outputResultDir, display=display)
+
     def plot_statistics(self, display=False):
         if self.is_master() and self.args.disable_statistics is False:
-            print("generate plots...")
+            print("generate stat plots...")
             fileName = self.simulation.name
             self.statistic.plotResults(fileName=fileName, directory=self.args.outputResultDir, display=display)
 
@@ -371,6 +377,8 @@ class UQsim(object):
             # statistics.saveAsNetCdf(timesteps=statistics.timesteps, fileName=fileName, directory=outputResultDir)
             #    statistics.printCsv(fileName=fileName, directory=outputResultDir)
             #self.statistic.saveRuntimeData(fileName=fileName, directory=self.args.outputResultDir)
+            self.simulationNodes.saveToFile(self.args.outputResultDir + "/" + fileName)
+            self.simulation.saveToFile(self.args.outputResultDir + "/" + fileName)
 
             if self.args.analyse_runtime is True:
                 fileName = fileName + "_runtime"
