@@ -174,9 +174,9 @@ class MpiPoolSolver(Solver):
                                                     parameterChunks, [self.numCores]*len(i_s_chunk),
                                                     chunksize=self.mpi_chunksize, unordered=self.unordered)
 
-                # print str(self.rank) + ": " + "waits for shutdown..."
+                print("{}: waits for shutdown...".format(self.rank))
                 executor.shutdown(wait=True)
-                # print str(self.rank) + ": " + "shutted down"
+                print("{}: shutted down...".format(self.rank))
 
                 solver_time_end = time.time()
 

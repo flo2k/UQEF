@@ -8,10 +8,13 @@ import chaospy as cp
 import numpy as np
 from tabulate import tabulate
 import matplotlib.pyplot as plotter
+import seaborn as sns
 import json
 import dill
 import psutil
-
+import os
+import sys
+import pandas as pd
 
 class Nodes(object):
     """
@@ -255,10 +258,76 @@ class Nodes(object):
             
         plotter.close()
 
+    def plotDists(self, display=False,
+                    fileName="", fileNameIdent="", directory="./",
+                    fileNameIdentIsFullName=False, safe=True):
+
+        fileName = self.generateFileName(fileName, fileNameIdent, directory, fileNameIdentIsFullName)
+
+        #prepare data
+        sampled_data = self.joinedDists.sample(10**4)
+
+        for sample_name, samples in zip(["sampled_data", "distNodes"], [sampled_data, self.distNodes]):
+            orderdDistsNames = []
+            for i in range(0, len(self.nodeNames)):
+                nameOfNode = self.nodeNames[i]
+                if nameOfNode in self.dists:
+                    orderdDistsNames.append(nameOfNode)
+
+            data_dict = {}
+            for name, sample in zip(orderdDistsNames, samples):
+                data_dict[name] = sample
+
+            dataset = pd.DataFrame(data_dict)
+
+            #plot
+            figure = plotter.figure(1, figsize=(12, 4))
+            sns.set()
+
+            fontsize = 15
+            plotter.rc('font', family='serif', size=fontsize)
+
+            g = sns.pairplot(dataset)
+            g.map_lower(sns.kdeplot)
+            g.map_upper(sns.kdeplot)
+            #g.map_diag(sns.kdeplot, lw=3)
+
+            # Plotter settings
+            #plotter.subplots_adjust(wspace=0.15, hspace=0.2, bottom=0.25, top=0.92, left=0.07, right=0.98)
+
+            # save figure qoi_dist
+            pdfFileName = fileName + "_" + "dists_pairplot_" + sample_name + '.pdf'
+            pngFileName = fileName + "_" + "dists_pairplot_" + sample_name + '.png'
+            plotter.savefig(pdfFileName, format='pdf')
+            plotter.savefig(pngFileName, format='png')
+
+            if display:
+                plotter.show()
+
+            plotter.close()
+
+    def generateFileName(self,
+                         fileName="", fileNameIdent="", directory="./",
+                         fileNameIdentIsFullName=False):
+        if not directory.endswith("/"):
+            directory = directory + "/"
+
+        if fileName == "":
+            fileName = os.path.splitext(sys.argv[0])[0]
+
+        if fileNameIdentIsFullName:
+            fileName = fileNameIdent
+        else:
+            fileName = directory + fileName
+            if len(fileNameIdent) > 0:
+                fileName = fileName + fileNameIdent
+
+        return fileName
+
     def saveToFile(self, fileName):
         # save state file
-        statFileName = fileName + '.simnodes'
-        with open(statFileName, 'wb') as f:
+        nodesFileName = fileName + '.simnodes'
+        with open(nodesFileName, 'wb') as f:
             #pickle.dump(list(self), f)
             dill.dump(self, f)
 

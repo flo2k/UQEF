@@ -42,6 +42,6 @@ class Simulation(object):
 
     def saveToFile(self, fileName):
         # save state file
-        statFileName = fileName + '.sim'
-        with open(statFileName, 'wb') as f:
+        simFileName = fileName + '.sim'
+        with open(simFileName, 'wb') as f:
             dill.dump(self, f)
