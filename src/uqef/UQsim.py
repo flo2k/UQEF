@@ -223,17 +223,24 @@ class UQsim(object):
                     for p in cp_dist_signature.parameters:
                         dist_parameters_values.append(parameter_config[p])
 
-
                     if self.args.transformToStandardDist:
                         self.simulationNodes.setDist(parameter_config["name"],
                                                      getattr(cp, parameter_config["distribution"])())
 
+                        #TODO: Do this in more elegant way
                         if parameter_config["distribution"] == "Normal":
-                            pass
+                            transformation_param_tuple = (parameter_config["mu"], parameter_config["sigma"])
+                            transformation_distribution = lambda x, mu, std: mu + std * x
                         elif parameter_config["distribution"] == "Uniform":
-                            pass
+                            _a = (parameter_config["lower"] + parameter_config["upper"]) / 2
+                            _b = (parameter_config["upper"] - parameter_config["lower"]) / 2
+                            transformation_param_tuple = (_a, _b)
+                            transformation_distribution = lambda x, mu, std: mu + std * x
                         else:
-                            pass
+                            transformation_param_tuple = (parameter_config["default_mu"], parameter_config["default_sigma"])
+                            transformation_distribution = lambda x, mu, std: mu + std * x
+
+                        self.simulationNodes.setTransformation(parameter_config["name"], transformation_param_tuple, transformation_distribution)
 
                     else:
                         self.simulationNodes.setDist(parameter_config["name"],
