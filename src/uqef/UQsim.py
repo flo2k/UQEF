@@ -387,6 +387,7 @@ class UQsim(object):
         if self.is_master() and self.args.disable_statistics is False:
             print("generate stat plots...")
             fileName = self.simulation.name
+            #TODO I might need to transfer simulationNodes as well
             self.statistic.plotResults(fileName=fileName, directory=self.args.outputResultDir, display=display)
 
             if self.args.analyse_runtime is True and self.args.model != "runtime":
@@ -396,11 +397,13 @@ class UQsim(object):
         if self.is_master() and self.args.disable_statistics is False:
             print("save statistics...")
             fileName = self.simulation.name
+            # TODO This can be hugeee file, ask if you want this
             self.statistic.saveToFile(fileName=fileName, directory=self.args.outputResultDir)
             # statistics.saveAsNetCdf(timesteps=statistics.timesteps, fileName=fileName, directory=outputResultDir)
             #    statistics.printCsv(fileName=fileName, directory=outputResultDir)
             #self.statistic.saveRuntimeData(fileName=fileName, directory=self.args.outputResultDir)
             self.simulationNodes.saveToFile(self.args.outputResultDir + "/" + fileName)
+            # TODO This can be hugeee file, ask if you want this
             self.simulation.saveToFile(self.args.outputResultDir + "/" + fileName)
 
             if self.args.analyse_runtime is True:
@@ -412,6 +415,7 @@ class UQsim(object):
 
     def tear_down(self):
         if self.is_master():
+            #TODO Here everything is saved -> save args and self.configuration_object only in separate...
             self.store_to_file()
 
         sys.stdout.flush()
@@ -423,6 +427,7 @@ class UQsim(object):
 
     def save_to_file(self, file_name):
         with open(file_name, 'wb') as f:
+            # TODO Here everything is saved -> can be hugeee file
             dill.dump(self, f)
 
     def store_to_file(self):
