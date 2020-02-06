@@ -333,47 +333,47 @@ class UQsim(object):
                 print("solver time: {} sec".format(solver_time))
                 sys.stdout.flush()
 
-    def calc_statistics(self):
+    def calc_statistics(self, **kwargs):
         if self.is_master() and (self.args.disable_statistics is False and self.args.disable_recalc_statistics is False):
             self.statistic = self.statistics[self.args.model]()
             print("calculate statistics [{}]...".format(type(self.statistic).__name__))
-            self.simulation.calculateStatistics(self.statistic, self.simulationNodes, self.runtime_estimator)
+            self.simulation.calculateStatistics(self.statistic, self.simulationNodes, self.runtime_estimator, **kwargs)
 
             if self.args.analyse_runtime is True and self.args.model == "runtime":
                 self.runtime_statistic = self.statistic
             elif self.args.analyse_runtime is True:
                 self.runtime_statistic = self.statistics["runtime"]()
                 print("calculate statistics [{}]...".format(type(self.runtime_statistic).__name__))
-                self.simulation.calculateStatistics(self.runtime_statistic, self.simulationNodes, self.runtime_estimator)
+                self.simulation.calculateStatistics(self.runtime_statistic, self.simulationNodes, self.runtime_estimator, **kwargs)
 
-    def print_statistics(self):
+    def print_statistics(self, **kwargs):
         if self.is_master() and self.args.disable_statistics is False:
             print("print statistics...")
-            print(self.statistic.printResults())
+            print(self.statistic.printResults(**kwargs))
 
             if self.args.analyse_runtime is True and self.args.model != "runtime":
-                print(self.runtime_statistic.printResults())
+                print(self.runtime_statistic.printResults(**kwargs))
 
-    def plot_nodes(self, display=False):
+    def plot_nodes(self, display=False, **kwargs):
         if self.is_master() and self.args.disable_statistics is False:
             print("generate node plots...")
             fileName = self.simulation.name
             self.simulationNodes.plotDists(fileName=fileName, directory=self.args.outputResultDir, display=display)
 
-    def plot_statistics(self, display=False):
+    def plot_statistics(self, display=False, **kwargs):
         if self.is_master() and self.args.disable_statistics is False:
             print("generate stat plots...")
             fileName = self.simulation.name
-            self.statistic.plotResults(fileName=fileName, directory=self.args.outputResultDir, display=display)
+            self.statistic.plotResults(fileName=fileName, directory=self.args.outputResultDir, display=display, **kwargs)
 
             if self.args.analyse_runtime is True and self.args.model != "runtime":
-                self.runtime_statistic.plotResults(fileName=fileName, directory=self.args.outputResultDir, display=display)
+                self.runtime_statistic.plotResults(fileName=fileName, directory=self.args.outputResultDir, display=display, **kwargs)
 
-    def save_statistics(self):
+    def save_statistics(self, **kwargs):
         if self.is_master() and self.args.disable_statistics is False:
             print("save statistics...")
             fileName = self.simulation.name
-            self.statistic.saveToFile(fileName=fileName, directory=self.args.outputResultDir)
+            self.statistic.saveToFile(fileName=fileName, directory=self.args.outputResultDir, **kwargs)
             # statistics.saveAsNetCdf(timesteps=statistics.timesteps, fileName=fileName, directory=outputResultDir)
             #    statistics.printCsv(fileName=fileName, directory=outputResultDir)
             #self.statistic.saveRuntimeData(fileName=fileName, directory=self.args.outputResultDir)
@@ -382,10 +382,10 @@ class UQsim(object):
 
             if self.args.analyse_runtime is True:
                 fileName = fileName + "_runtime"
-                self.runtime_statistic.saveToFile(fileName=fileName, directory=self.args.outputResultDir)
+                self.runtime_statistic.saveToFile(fileName=fileName, directory=self.args.outputResultDir, **kwargs)
                 # statistics.saveAsNetCdf(timesteps=statistics.timesteps, fileName=fileName, directory=outputResultDir)
                 #    statistics.printCsv(fileName=fileName, directory=outputResultDir)
-                self.runtime_statistic.saveRuntimeData(fileName=fileName, directory=self.args.outputResultDir)
+                self.runtime_statistic.saveRuntimeData(fileName=fileName, directory=self.args.outputResultDir, **kwargs)
 
     def tear_down(self):
         if self.is_master():

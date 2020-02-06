@@ -39,12 +39,12 @@ class Statistics(object):
                             work_package_indexes, original_runtime_estimator=None):
         pass
 
-    def printResults(self, timestep=-1):
+    def printResults(self, timestep=-1, **kwargs):
         pass
 
     def plotResults(self, timestep=-1, display=False,
                     fileName="", fileNameIdent="", directory="./",
-                    fileNameIdentIsFullName=False, safe=True):
+                    fileNameIdentIsFullName=False, safe=True, **kwargs):
         pass
 
     def generateFileName(self,
@@ -67,12 +67,12 @@ class Statistics(object):
 
     def plotAnimation(self, timesteps, display=False,
                       fileName="", fileNameIdent="", directory="./",
-                      fileNameIdentIsFullName=False, safe=True):
+                      fileNameIdentIsFullName=False, safe=True, **kwargs):
         pass
 
     def saveToFile(self,
                    fileName="", fileNameIdent="", directory="./",
-                   fileNameIdentIsFullName=False):
+                   fileNameIdentIsFullName=False, **kwargs):
         fileName = self.generateFileName(fileName, fileNameIdent, directory, fileNameIdentIsFullName)
 
         #save state file
