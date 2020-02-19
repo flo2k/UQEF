@@ -369,6 +369,15 @@ class UQsim(object):
             if self.args.analyse_runtime is True and self.args.model != "runtime":
                 self.runtime_statistic.plotResults(fileName=fileName, directory=self.args.outputResultDir, display=display, **kwargs)
 
+    def plot_animations(self, timesteps, display=False, **kwargs):
+        if self.is_master() and self.args.disable_statistics is False:
+            print("generate stat animations...")
+            fileName = self.simulation.name
+            self.statistic.plotAnimation(timesteps, fileName=fileName, directory=self.args.outputResultDir, display=display, **kwargs)
+
+            if self.args.analyse_runtime is True and self.args.model != "runtime":
+                self.runtime_statistic.plotAnimation(timesteps, fileName=fileName, directory=self.args.outputResultDir, display=display, **kwargs)
+
     def save_statistics(self, **kwargs):
         if self.is_master() and self.args.disable_statistics is False:
             print("save statistics...")
