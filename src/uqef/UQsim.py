@@ -118,7 +118,7 @@ class UQsim(object):
         self.parser.add_argument('--sc_q_order'                , type=int, default=2)  # number of collocation points in each direction (Q)
         self.parser.add_argument('--sc_p_order'                , type=int, default=1)  # number of terms in PCE (N)
         self.parser.add_argument('--sc_sparse_quadrature'      , action='store_true', default=False)
-        self.parser.add_argument('--sc_quadrature_rule'        , default='g')
+        self.parser.add_argument('--sc_quadrature_rule'        , default='G')
         self.parser.add_argument('--config_file')
 
         # Solver settings
