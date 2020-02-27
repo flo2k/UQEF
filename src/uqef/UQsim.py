@@ -136,7 +136,6 @@ class UQsim(object):
         self.parser.add_argument('--analyse_runtime'           , action='store_true', default=False)
         self.parser.add_argument('--opt_runtime'               , action='store_true', default=False)
         self.parser.add_argument('--opt_runtime_gpce_Dir'      , default=".")
-        self.parser.add_argument('--opt_type'                  , default="WORK_PACKAGE")    # WORK_LIST WORK_PACKAGE
         self.parser.add_argument('--opt_algorithm'             , default="LPT")             # FCFS LPT SPT MULTIFIT
         self.parser.add_argument('--opt_strategy'              , default="DYNAMIC")         # FIXED_ALTERNATE FIXED_LINEAR DYNAMIC
 
@@ -298,10 +297,6 @@ class UQsim(object):
 
                 self.simulation.prepareSolver()
 
-            type = uqef.schedule.Types[self.args.opt_type]
-            # type      = uqef.schedule.Type.WORK_LIST
-            # type      = uqef.schedule.Type.WORK_PACKAGE
-
             algorithm = uqef.schedule.Algorithms[self.args.opt_algorithm]
             # algorithm = uqef.schedule.Algorithm.FCFS
             # algorithm = uqef.schedule.Algorithm.LPT
@@ -314,14 +309,13 @@ class UQsim(object):
             # strategy  = uqef.schedule.Strategy.DYNAMIC
 
             if self.is_master():
-                print("Opt type: {}".format(list(uqef.schedule.Types.keys())[list(uqef.schedule.Types.values()).index(type)]))
                 print("Opt algorithm: {}".format(list(uqef.schedule.Algorithms.keys())[list(uqef.schedule.Algorithms.values()).index(algorithm)]))
                 print("Opt strategy: {}".format(list(uqef.schedule.Strategies.keys())[list(uqef.schedule.Strategies.values()).index(strategy)]))
                 sys.stdout.flush()
 
             # do the solving => the propagation
             self.solver.solve(runtime_estimator=self.runtime_estimator, chunksize=self.args.chunksize,
-                              type=type, algorithm=algorithm, strategy=strategy)
+                              algorithm=algorithm, strategy=strategy)
 
             if self.is_master():
                 self.solver.tearDown()  # stop the solver

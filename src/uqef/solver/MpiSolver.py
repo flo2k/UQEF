@@ -83,7 +83,7 @@ class MpiSolver(Solver):
         self.infoModel.prepare()
 
     def solve(self, runtime_estimator=None, chunksize=1,
-              type=schedule.Type.WORK_LIST, algorithm=schedule.Algorithm.FCFS, strategy=schedule.Strategy.FIXED_LINEAR):
+              algorithm=schedule.Algorithm.FCFS, strategy=schedule.Strategy.FIXED_LINEAR):
         if self.rank == 0:
             work_parameters = self.parameters
             # assert
