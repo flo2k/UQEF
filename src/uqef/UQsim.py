@@ -227,13 +227,15 @@ class UQsim(object):
                         self.simulationNodes.setDist(parameter_config["name"],
                                                      getattr(cp, parameter_config["distribution"])())
 
-                        #TODO: Do this in more elegant way
+                        #TODO-Ivana: Do this in more elegant way
                         if parameter_config["distribution"] == "Normal":
                             transformation_param_tuple = (parameter_config["mu"], parameter_config["sigma"])
                             transformation_distribution = lambda x, mu, std: mu + std * x
                         elif parameter_config["distribution"] == "Uniform":
-                            _a = (parameter_config["lower"] + parameter_config["upper"]) / 2
-                            _b = (parameter_config["upper"] - parameter_config["lower"]) / 2
+                            #_a = (parameter_config["lower"] + parameter_config["upper"]) / 2
+                            #_b = (parameter_config["upper"] - parameter_config["lower"]) / 2
+                            _a = parameter_config["lower"]
+                            _b = (parameter_config["upper"] - parameter_config["lower"])
                             transformation_param_tuple = (_a, _b)
                             transformation_distribution = lambda x, mu, std: mu + std * x
                         else:
@@ -387,23 +389,27 @@ class UQsim(object):
         if self.is_master() and self.args.disable_statistics is False:
             print("generate stat plots...")
             fileName = self.simulation.name
-            #TODO I might need to transfer simulationNodes as well
+            #TODO-Ivana: I might need to transfer simulationNodes as well
             self.statistic.plotResults(fileName=fileName, directory=self.args.outputResultDir, display=display)
 
             if self.args.analyse_runtime is True and self.args.model != "runtime":
                 self.runtime_statistic.plotResults(fileName=fileName, directory=self.args.outputResultDir, display=display)
 
+    def save_simulationNodes(self, fileName=None):
+        if self.is_master():
+            if fileName is None: fileName = self.simulation.name
+            self.simulationNodes.saveToFile(self.args.outputResultDir + "/" + fileName)
+
     def save_statistics(self):
         if self.is_master() and self.args.disable_statistics is False:
             print("save statistics...")
             fileName = self.simulation.name
-            # TODO This can be hugeee file, ask if you want this
+            #TODO-Ivana: Think how to change this so that it takes less space
             self.statistic.saveToFile(fileName=fileName, directory=self.args.outputResultDir)
             # statistics.saveAsNetCdf(timesteps=statistics.timesteps, fileName=fileName, directory=outputResultDir)
             #    statistics.printCsv(fileName=fileName, directory=outputResultDir)
             #self.statistic.saveRuntimeData(fileName=fileName, directory=self.args.outputResultDir)
             self.simulationNodes.saveToFile(self.args.outputResultDir + "/" + fileName)
-            # TODO This can be hugeee file, ask if you want this
             self.simulation.saveToFile(self.args.outputResultDir + "/" + fileName)
 
             if self.args.analyse_runtime is True:
@@ -415,11 +421,11 @@ class UQsim(object):
 
     def tear_down(self):
         if self.is_master():
-            #TODO Here everything is saved -> save args and self.configuration_object only in separate...
             self.store_to_file()
 
         sys.stdout.flush()
 
+    #TODO-Ivana: Think how to rewrite these set of functions suche that uqsim.saved is not that big in size (less data is savedd)
     @staticmethod
     def load_from_file(file_name):
         with open(file_name, 'rb') as f:
@@ -427,7 +433,6 @@ class UQsim(object):
 
     def save_to_file(self, file_name):
         with open(file_name, 'wb') as f:
-            # TODO Here everything is saved -> can be hugeee file
             dill.dump(self, f)
 
     def store_to_file(self):
