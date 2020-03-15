@@ -24,15 +24,20 @@ class SaltelliSimulation(Simulation):
         return "%s running %d evaluations" % (type(self).__name__, self.numEvaluations*2)
 
     def generateSimulationNodes(self, simulationNodes):
-        nodes = simulationNodes.generateNodesForMC(self.numEvaluations*2)
+        nodes, parameters = simulationNodes.generateNodesForMC(self.numEvaluations*2)
 
-        # nodes = nodes.T #nodes should be now nxd
-        d = nodes.shape[0]
-        N = self.numEvaluations  # (nodes.shape)[1] should be 2*N
+        if parameters is not None:
+            temp = parameters
+        else:
+            temp = nodes
+        self.nodes = nodes
+
+        d = temp.shape[0]
+        N = self.numEvaluations  # (temp.shape)[1] should be 2*N
         new_dim = N * (d + 2)
         print("MC & Saltelli INFO: D is %d, N is %d, total number of calcuations will be %d" % (d, N, new_dim))
-        m1 = nodes.T[:N].T  # m1.shape = (d,N)
-        m2 = nodes.T[N:].T  # m2.shape = (d,N)
+        m1 = temp.T[:N].T  # m1.shape = (d,N)
+        m2 = temp.T[N:].T  # m2.shape = (d,N)
         print("MC & Saltelli INFO:m1 shape: {}".format(m1.shape))
         print("MC & Saltelli INFO:m2 shape: {}".format(m2.shape))
 

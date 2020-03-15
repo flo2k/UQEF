@@ -10,11 +10,17 @@ from tabulate import tabulate
 import matplotlib.pyplot as plotter
 import seaborn as sns
 import json
+import pickle
 import dill
 import psutil
 import os
 import sys
 import pandas as pd
+
+# this lines are added so that the line [dill.dump(self.parameters, f)] will work
+import copyreg
+import zipimport
+copyreg.pickle(zipimport.zipimporter, lambda x: (x.__class__, (x.archive, )))
 
 class Nodes(object):
     """
@@ -43,12 +49,12 @@ class Nodes(object):
 
     def setValue(self, nodeName, value):
         self.assertNodeName(nodeName)
-        
+
         self.values[nodeName] = value
-    
+
     def setDist(self, nodeName, dist):
         self.assertNodeName(nodeName)
-        
+
         self.dists[nodeName] = dist
 
     def setTransformation(self, nodeName, parametersTuple, transformationFunc):
@@ -60,25 +66,25 @@ class Nodes(object):
 
     def assertNodeName(self, nodeName):
         assert nodeName in self.nodeNames, "name of node " + nodeName + " not registered."
-    
+
     def assertConfiguration(self):
         numRegisteredNodes = len(self.nodeNames)
         numValues = len(self.values)
         numDists = len(self.dists)
-        
+
         assert (numValues + numDists) == numRegisteredNodes, "not enough values registered"
 
     def getDistNodeNames(self):
         distNodeNames = [nodeName for nodeName in self.nodeNames if nodeName in self.dists]
         return distNodeNames
-    
+
     def generateNodesForMC(self, numSamples):
         if self.numSamplesOrScDim == numSamples:
             return self.nodes
 
         self.assertConfiguration()
         self.numSamplesOrScDim = numSamples
-        
+
         #order the distributes to get a defined order
         orderdDists = []
         orderdDistsNames = []
@@ -87,20 +93,20 @@ class Nodes(object):
             if nameOfNode in self.dists:
                 orderdDists.append(self.dists[nameOfNode])
                 orderdDistsNames.append(nameOfNode)
-        
+
         if len(self.dists) > 0:
             self.joinedDists = cp.J(*orderdDists)
             distNodes = self.joinedDists.sample(numSamples)
             self.distNodes = distNodes
-        
+
         nodes = []
-        
+
         for i in range(0, len(self.nodeNames)):
             nameOfNode = self.nodeNames[i]
-            
+
             if nameOfNode in self.values:
                 nodes.append([self.values[nameOfNode]]*numSamples)
-                
+
             if nameOfNode in self.dists:
                 if len(self.dists) == 1:
                     nodes.append(distNodes)
@@ -115,7 +121,7 @@ class Nodes(object):
             self.parameters = self.transformParameters(orderdDistsNames, nodes)
 
         return self.nodes, self.parameters
-    
+
     def generateNodesForSC(self, numCollocationPointsPerDim, rule="G", sparse=False):
 
         if self.numSamplesOrScDim == numCollocationPointsPerDim:
@@ -133,30 +139,30 @@ class Nodes(object):
             if nameOfNode in self.dists:
                 orderdDists.append(self.dists[nameOfNode])
                 orderdDistsNames.append(nameOfNode)
-        
+
         if len(self.dists) > 0:
             self.joinedDists = cp.J(*orderdDists)
             self.__save__cpu_affinity()
             growth = True if (rule == "c" and sparse == False) else False  # according to: https://github.com/jonathf/chaospy/issues/139
-            self.distNodes, self.weights = cp.generate_quadrature(numCollocationPointsPerDim, 
-                                                                  self.joinedDists, 
+            self.distNodes, self.weights = cp.generate_quadrature(numCollocationPointsPerDim,
+                                                                  self.joinedDists,
                                                                   rule=rule,
                                                                   growth=growth,
                                                                   sparse=sparse)
             self.__restore__cpu_affinity()
-        
+
         nodes = []
         if len(self.distNodes) == 0:
             numNodes=numCollocationPointsPerDim
         else:
             numNodes=len(self.distNodes[0])
-        
+
         for i in range(0, len(self.nodeNames)):
             nameOfNode = self.nodeNames[i]
-            
+
             if nameOfNode in self.values:
                 nodes.append([self.values[nameOfNode]]*numNodes)
-                
+
             if nameOfNode in self.dists:
                 nodes.append(self.distNodes[orderdDistsNames.index(nameOfNode)])
 
@@ -196,13 +202,13 @@ class Nodes(object):
 
         for i in range(0, len(self.nodeNames)):
             nameOfNode = self.nodeNames[i]
-        
+
             if nameOfNode in self.values:
                 nodesSetupTable.append([nameOfNode, self.values[nameOfNode]])
-            
+
             if nameOfNode in self.dists:
                 nodesSetupTable.append([nameOfNode, self.dists[nameOfNode]])
-                
+
         return tabulate(nodesSetupTable, headers=["parameter", "value/dist"])
 
     def printNodes(self):
@@ -216,9 +222,9 @@ class Nodes(object):
         str = tabulate(resultTable, headers=self.nodeNames, floatfmt="f") + "\n"
         str += "\n" + "{} black-box models runs required".format(len(nodes))
         return str
-    
+
     def plotDistsSetup(self, fileName, numCollocationPointsPerDim, rule="G", show=False):
-        
+
         #figure setup
         figure = plotter.figure(1, figsize=(6.5, 5))
         figure.canvas.set_window_title('simuluation node setup')
@@ -229,12 +235,12 @@ class Nodes(object):
         for distributionName in dists:
             #generate nodes and weights
             self.__save__cpu_affinity()
-            nodes, weights = cp.generate_quadrature(numCollocationPointsPerDim, 
-                                                    dists[distributionName], 
+            nodes, weights = cp.generate_quadrature(numCollocationPointsPerDim,
+                                                    dists[distributionName],
                                                     rule=rule)
             self.__restore__cpu_affinity()
             nodes=nodes[0]
-             
+
             #plot quadrature nodes and weights
             plotter.subplot(numDists, 1, counter)
             plotter.title(distributionName + ' parameter\nnodes and weights\n'+ str(dists[distributionName]))
@@ -244,18 +250,18 @@ class Nodes(object):
             plotter.ylabel('weight')
             plotter.legend() #enable the legend
             plotter.grid(True)
-             
+
             counter = counter + 1
-        
+
         plotter.tight_layout(pad=0.0, w_pad=0.0, h_pad=0.0)
-        
+
         #save figure
         plotter.savefig(fileName, format='pdf')
-            
+
         #show figure
         if show:
             plotter.show() #show the plot
-            
+
         plotter.close()
 
     def plotDists(self, display=False,
@@ -328,8 +334,16 @@ class Nodes(object):
         # save state file
         nodesFileName = fileName + '.simnodes'
         with open(nodesFileName, 'wb') as f:
-            #pickle.dump(list(self), f)
             dill.dump(self, f)
+            #pickle.dump(list(self), f)
+            #dill.dump(self.nodes, f)
+
+        #if self.performTransformation and self.parameters is not None:
+        #    paramsFileName = fileName + '.simparams.pkl'
+        #    with open(paramsFileName, 'wb') as f:
+        #        # pickle.dump(list(self), f)
+        #        dill.dump(self.parameters, f)
+
 
     # def saveToFile(self, fileName):
     #     jsonData = json.loads('{}')

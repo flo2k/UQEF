@@ -224,18 +224,19 @@ class UQsim(object):
                         dist_parameters_values.append(parameter_config[p])
 
                     if self.args.transformToStandardDist:
-                        self.simulationNodes.setDist(parameter_config["name"],
-                                                     getattr(cp, parameter_config["distribution"])())
-
                         #TODO-Ivana: Do this in more elegant way
                         if parameter_config["distribution"] == "Normal":
+                            self.simulationNodes.setDist(parameter_config["name"],
+                                                     getattr(cp, parameter_config["distribution"])())
                             transformation_param_tuple = (parameter_config["mu"], parameter_config["sigma"])
                             transformation_distribution = lambda x, mu, std: mu + std * x
                         elif parameter_config["distribution"] == "Uniform":
-                            #_a = (parameter_config["lower"] + parameter_config["upper"]) / 2
-                            #_b = (parameter_config["upper"] - parameter_config["lower"]) / 2
-                            _a = parameter_config["lower"]
-                            _b = (parameter_config["upper"] - parameter_config["lower"])
+                            self.simulationNodes.setDist(parameter_config["name"],
+                                                     getattr(cp, parameter_config["distribution"])(lower=-1, upper=1))
+                            _a = (parameter_config["lower"] + parameter_config["upper"]) / 2
+                            _b = (parameter_config["upper"] - parameter_config["lower"]) / 2
+                            #_a = parameter_config["lower"]
+                            #_b = (parameter_config["upper"] - parameter_config["lower"])
                             transformation_param_tuple = (_a, _b)
                             transformation_distribution = lambda x, mu, std: mu + std * x
                         else:
@@ -409,7 +410,9 @@ class UQsim(object):
             # statistics.saveAsNetCdf(timesteps=statistics.timesteps, fileName=fileName, directory=outputResultDir)
             #    statistics.printCsv(fileName=fileName, directory=outputResultDir)
             #self.statistic.saveRuntimeData(fileName=fileName, directory=self.args.outputResultDir)
-            self.simulationNodes.saveToFile(self.args.outputResultDir + "/" + fileName)
+            #TODO-Ivana: This is better to be done beforehead
+            #self.simulationNodes.saveToFile(self.args.outputResultDir + "/" + fileName)
+            #TODO-Ivana: Think how to change this so that it takes less space
             self.simulation.saveToFile(self.args.outputResultDir + "/" + fileName)
 
             if self.args.analyse_runtime is True:
@@ -444,4 +447,3 @@ class UQsim(object):
         if self.args.uqsim_restore_from_file:
             print("UQsim: restore from file: {}".format(self.args.uqsim_restore_from_file))
             self.__dict__.update(self.load_from_file(self.args.uqsim_file).__dict__)
-
