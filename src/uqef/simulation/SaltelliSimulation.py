@@ -14,7 +14,7 @@ class SaltelliSimulation(Simulation):
     """
 
     def __init__(self, solver, numEvaluations, p_order, regression=False, *args, **kwargs):
-        Simulation.__init__(self, "mc", solver, *args, **kwargs)
+        Simulation.__init__(self, "saltelli", solver, *args, **kwargs)
 
         self.numEvaluations = numEvaluations
         self.p_order = p_order

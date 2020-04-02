@@ -220,7 +220,7 @@ class Nodes(object):
             resultTable.append(nodes[i])
 
         str = tabulate(resultTable, headers=self.nodeNames, floatfmt="f") + "\n"
-        str += "\n" + "{} black-box models runs required".format(len(nodes))
+        str += "\n" + "{} - length of the Nodes array".format(len(nodes))
         return str
 
     def plotDistsSetup(self, fileName, numCollocationPointsPerDim, rule="G", show=False):

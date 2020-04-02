@@ -428,7 +428,7 @@ class UQsim(object):
 
         sys.stdout.flush()
 
-    #TODO-Ivana: Think how to rewrite these set of functions suche that uqsim.saved is not that big in size (less data is savedd)
+    #TODO-Ivana: Think how to rewrite these set of functions such that uqsim.saved is not that big in size (less data is saved)
     @staticmethod
     def load_from_file(file_name):
         with open(file_name, 'rb') as f:
