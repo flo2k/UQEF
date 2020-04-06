@@ -119,6 +119,7 @@ class UQsim(object):
         self.parser.add_argument('--sc_p_order'                , type=int, default=1)  # number of terms in PCE (N)
         self.parser.add_argument('--sc_sparse_quadrature'      , action='store_true', default=False)
         self.parser.add_argument('--sc_quadrature_rule'        , default='g')
+        self.parser.add_argument('--sampling_rule'             , default='random')  # "sobol" | "latin_hypercube" | "halton"  | "hammersley"
         self.parser.add_argument('--transformToStandardDist', action='store_true', default=False)
         self.parser.add_argument('--config_file')
 
@@ -231,12 +232,16 @@ class UQsim(object):
                             transformation_param_tuple = (parameter_config["mu"], parameter_config["sigma"])
                             transformation_distribution = lambda x, mu, std: mu + std * x
                         elif parameter_config["distribution"] == "Uniform":
-                            self.simulationNodes.setDist(parameter_config["name"],
-                                                     getattr(cp, parameter_config["distribution"])(lower=-1, upper=1))
-                            _a = (parameter_config["lower"] + parameter_config["upper"]) / 2
-                            _b = (parameter_config["upper"] - parameter_config["lower"]) / 2
-                            #_a = parameter_config["lower"]
-                            #_b = (parameter_config["upper"] - parameter_config["lower"])
+                            if self.args.uq_method == "sc":
+                                self.simulationNodes.setDist(parameter_config["name"],
+                                                         getattr(cp, parameter_config["distribution"])(lower=-1, upper=1))
+                                _a = (parameter_config["lower"] + parameter_config["upper"]) / 2
+                                _b = (parameter_config["upper"] - parameter_config["lower"]) / 2
+                            else:
+                                self.simulationNodes.setDist(parameter_config["name"],
+                                                         getattr(cp, parameter_config["distribution"])(lower=0, upper=1))
+                                _a = parameter_config["lower"]
+                                _b = (parameter_config["upper"] - parameter_config["lower"])
                             transformation_param_tuple = (_a, _b)
                             transformation_distribution = lambda x, mu, std: mu + std * x
                         else:
@@ -274,12 +279,12 @@ class UQsim(object):
         if self.is_master():
             simulations = {
                 "mc"      : (lambda: uqef.simulation.McSimulation(self.solver, self.args.mc_numevaluations, self.args.sc_p_order,
-                                                                  self.args.regression))
+                                                                  self.args.regression, rule=self.args.sampling_rule))
                ,"sc"      : (lambda: uqef.simulation.ScSimulation(self.solver, self.args.sc_q_order, self.args.sc_p_order,
                                                                   self.args.sc_quadrature_rule, self.args.sc_sparse_quadrature,
                                                                   self.args.regression))
                ,"saltelli": (lambda: uqef.simulation.SaltelliSimulation(self.solver, self.args.mc_numevaluations, self.args.sc_p_order,
-                                                                        self.args.regression))
+                                                                        self.args.regression, rule=self.args.sampling_rule))
             }
             self.simulation = simulations[self.args.uq_method]()
 
@@ -413,7 +418,7 @@ class UQsim(object):
             #TODO-Ivana: This is better to be done beforehead
             #self.simulationNodes.saveToFile(self.args.outputResultDir + "/" + fileName)
             #TODO-Ivana: Think how to change this so that it takes less space
-            self.simulation.saveToFile(self.args.outputResultDir + "/" + fileName)
+            #self.simulation.saveToFile(self.args.outputResultDir + "/" + fileName)
 
             if self.args.analyse_runtime is True:
                 fileName = fileName + "_runtime"

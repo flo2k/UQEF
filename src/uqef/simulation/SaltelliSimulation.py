@@ -14,17 +14,20 @@ class SaltelliSimulation(Simulation):
     """
 
     def __init__(self, solver, numEvaluations, p_order, regression=False, *args, **kwargs):
-        Simulation.__init__(self, "saltelli", solver, *args, **kwargs)
+        #Simulation.__init__(self, "saltelli", solver, *args, **kwargs)
+        Simulation.__init__(self, "saltelli", solver)
 
         self.numEvaluations = numEvaluations
         self.p_order = p_order
         self.regression = regression
 
+        self.sampling_rule = kwargs.get('rule') if 'rule' in kwargs else 'R'
+
     def getSetup(self):
         return "%s running %d evaluations" % (type(self).__name__, self.numEvaluations*2)
 
     def generateSimulationNodes(self, simulationNodes):
-        nodes, parameters = simulationNodes.generateNodesForMC(self.numEvaluations*2)
+        nodes, parameters = simulationNodes.generateNodesForMC(numSamples=self.numEvaluations*2, rule=self.sampling_rule)
 
         if parameters is not None:
             temp = parameters

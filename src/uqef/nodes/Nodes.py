@@ -78,7 +78,7 @@ class Nodes(object):
         distNodeNames = [nodeName for nodeName in self.nodeNames if nodeName in self.dists]
         return distNodeNames
 
-    def generateNodesForMC(self, numSamples):
+    def generateNodesForMC(self, numSamples, rule="R"):
         if self.numSamplesOrScDim == numSamples:
             return self.nodes
 
@@ -96,7 +96,9 @@ class Nodes(object):
 
         if len(self.dists) > 0:
             self.joinedDists = cp.J(*orderdDists)
-            distNodes = self.joinedDists.sample(numSamples)
+            #distNodes = self.joinedDists.sample(numSamples, rule=rule).round(4)
+            #distNodes = cp.generate_samples(order=numSamples, domain=self.joinedDists, rule=rule).round(4)
+            distNodes = self.joinedDists.sample(size=numSamples, rule=rule).round(4)
             self.distNodes = distNodes
 
         nodes = []
