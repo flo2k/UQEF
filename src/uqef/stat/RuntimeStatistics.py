@@ -118,8 +118,8 @@ class RuntimeStatistics(Statistics):
         self.calc_stats_for_gPCE(dist)
 
         # qoi_dists
-        delta = 2
-        self.qoi_dist_sampling = np.linspace(samples.runtime.min() - delta, samples.runtime.max() + delta, 1e4, endpoint=True)
+        delta = 2.0
+        self.qoi_dist_sampling = np.linspace(samples.runtime.min() - delta, samples.runtime.max() + delta, 10**4, endpoint=True)
         print(self.qoi_dist_sampling)
 
         qoi_dist_runtime = cp.QoI_Dist(self.GPCe_runtime, dist, sample=5e4)
