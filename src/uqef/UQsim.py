@@ -394,6 +394,7 @@ class UQsim(object):
         if self.is_master():
             self.store_to_file()
 
+        print("rank {}: endtime: {}".format(rank, datetime.datetime.now().strftime('%Y.%m.%d %H:%M:%S')))
         sys.stdout.flush()
 
     @staticmethod
