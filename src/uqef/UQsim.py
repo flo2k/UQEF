@@ -104,6 +104,7 @@ class UQsim(object):
         self.parser.add_argument('-im', '--inputModelDir'      , default=".")
         self.parser.add_argument('-om', '--outputModelDir'     , default=".")
         self.parser.add_argument('-or', '--outputResultDir'    , default=".")
+        self.parser.add_argument('-src', '--sourceDir'          , default=".")
 
         # Model settings
         self.parser.add_argument('--model'                     , default="testmodel")
@@ -120,7 +121,7 @@ class UQsim(object):
         self.parser.add_argument('--sc_sparse_quadrature'      , action='store_true', default=False)
         self.parser.add_argument('--sc_quadrature_rule'        , default='g')
         self.parser.add_argument('--sampling_rule'             , default='random')  # "sobol" | "latin_hypercube" | "halton"  | "hammersley"
-        self.parser.add_argument('--transformToStandardDist', action='store_true', default=False)
+        self.parser.add_argument('--transformToStandardDist'   , action='store_true', default=False)
         self.parser.add_argument('--config_file')
 
         # Solver settings
