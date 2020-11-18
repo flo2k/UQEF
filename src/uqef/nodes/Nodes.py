@@ -60,7 +60,7 @@ class Nodes(object):
     def setTransformation(self, nodeName, parametersTuple, transformationFunc):
         self.assertNodeName(nodeName)
 
-        self.performTransformation = True
+        self.performTransformation = True #TODO no point of having this here...
         self.transformationParameters[nodeName] = parametersTuple
         self.transformationFunctions[nodeName] = transformationFunc
 
@@ -177,7 +177,7 @@ class Nodes(object):
         return self.nodes, self.weights, self.parameters
 
     def transformParameters(self, orderdDistsNames, nodes):
-        transformedNodes = nodes
+        transformedNodes = np.array(nodes, copy=True)
         for i in range(0, len(self.nodeNames)):
             nameOfNode = self.nodeNames[i]
             if nameOfNode in self.dists:
