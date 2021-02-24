@@ -21,19 +21,20 @@ class SaltelliSimulation(Simulation):
         self.p_order = p_order
         self.regression = regression
 
-        self.sampling_rule = kwargs.get('rule') if 'rule' in kwargs else 'R'
+        self.rule = kwargs.get('rule') if 'rule' in kwargs else 'R'
 
     def getSetup(self):
         return "%s running %d evaluations" % (type(self).__name__, self.numEvaluations*2)
 
     def generateSimulationNodes(self, simulationNodes):
-        nodes, parameters = simulationNodes.generateNodesForMC(numSamples=self.numEvaluations*2, rule=self.sampling_rule)
+        nodes, parameters = simulationNodes.generateNodesForMC(
+            numSamples=self.numEvaluations*2, rule=self.rule)
 
         if parameters is not None:
             temp = parameters
         else:
             temp = nodes
-        self.nodes = nodes
+        self.nodes = nodes.T
 
         d = temp.shape[0]
         N = self.numEvaluations  # (temp.shape)[1] should be 2*N
@@ -55,7 +56,6 @@ class SaltelliSimulation(Simulation):
         print("MC & Saltelli INFO: simulation.parameters shape ")
         print(self.parameters.shape)
 
-
     def calculateStatistics(self, statistics, simulationNodes, original_runtime_estimator=None):
             model_results = self.solver.results
             timesteps = self.solver.timesteps
@@ -73,8 +73,8 @@ class SaltelliSimulation(Simulation):
     @staticmethod
     def _get_matrix(matrix_A, matrix_B, indices):
         """Retrieve Saltelli matrix.
-        Input matrices shoul be of dimension dim x number_of_samples
-        len(indices) shoul be equal to the dim
+        Input matrices should be of dimension dim x number_of_samples
+        len(indices) should be equal to the dim
 
         Return: A_B matrix from Saltelli 2010 paper
         """

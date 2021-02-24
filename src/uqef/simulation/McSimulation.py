@@ -18,12 +18,13 @@ class McSimulation(Simulation):
         self.numEvaluations = numEvaluations
         self.p_order = p_order
         self.regression = regression
+        self.rule = kwargs.get('rule') if 'rule' in kwargs else "R"
 
     def getSetup(self):
         return "%s running %d evaluations %s" % (type(self).__name__, self.numEvaluations, "with regression" if self.regression else "")
 
     def generateSimulationNodes(self, simulationNodes):
-        nodes, parameters = simulationNodes.generateNodesForMC(self.numEvaluations)
+        nodes, parameters = simulationNodes.generateNodesForMC(self.numEvaluations, rule=self.rule)
         nodes = nodes.T
 
         if parameters is not None:

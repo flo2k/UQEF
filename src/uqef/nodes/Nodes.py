@@ -36,10 +36,10 @@ class Nodes(object):
         self.nodeNames = nodeNames
         self.values = {}
         self.dists = {}
-        self.joinedDists=[]
-        self.distNodes=[]
-        self.weights=[]
-        self.nodes=[]
+        self.joinedDists = []
+        self.distNodes = []
+        self.weights = []
+        self.nodes = []
         self.numSamplesOrScDim = None
 
         self.performTransformation = False
@@ -114,7 +114,6 @@ class Nodes(object):
                     nodes.append(distNodes)
                 else:
                     nodes.append(distNodes[orderdDistsNames.index(nameOfNode)])
-
 
         self.nodes = np.array(nodes)
         self.weights = np.array(self.weights) #MC has no weights, but after generation, we want a array
@@ -231,7 +230,7 @@ class Nodes(object):
         figure = plotter.figure(1, figsize=(6.5, 5))
         figure.canvas.set_window_title('simuluation node setup')
 
-        dists=self.dists
+        dists = self.dists
         counter = 1
         numDists = len(dists)
         for distributionName in dists:
@@ -241,7 +240,7 @@ class Nodes(object):
                                                     dists[distributionName],
                                                     rule=rule)
             self.__restore__cpu_affinity()
-            nodes=nodes[0]
+            nodes = nodes[0]
 
             #plot quadrature nodes and weights
             plotter.subplot(numDists, 1, counter)
