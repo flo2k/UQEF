@@ -12,7 +12,9 @@ class ScSimulation(Simulation):
     ScSimulation does a stochastic collocation simulation
     """
 
-    def __init__(self, solver, q_order, p_order, rule="G", sparse_quadrature=False, regression=False, *args, **kwargs):
+    def __init__(self, solver, q_order, p_order, rule="G", sparse_quadrature=False, regression=False,
+                 poly_normed=False, poly_rule="three_terms_recurrence",
+                 *args, **kwargs):
         Simulation.__init__(self, "sc", solver, *args, **kwargs)
 
         self.q_order = q_order
@@ -20,6 +22,8 @@ class ScSimulation(Simulation):
         self.rule = rule
         self.sparse_quadrature = sparse_quadrature
         self.regression = regression
+        self.poly_normed = poly_normed
+        self.poly_rule = poly_rule
 
     def getSetup(self):
         return "%s using q_order=%d and p_order=%d %s" % (type(self).__name__, self.q_order, self.p_order, "with regression" if self.regression else "")
@@ -44,6 +48,8 @@ class ScSimulation(Simulation):
 
         statistics.calcStatisticsForSc(model_results, timesteps, simulationNodes, self.p_order,
                                        self.regression,
+                                       self.poly_normed,
+                                       self.poly_rule,
                                        solverTimes,
                                        self.solver.work_package_indexes, self.original_runtime_estimator)
         

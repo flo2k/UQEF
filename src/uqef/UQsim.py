@@ -120,6 +120,8 @@ class UQsim(object):
         self.parser.add_argument('--sc_p_order'                , type=int, default=1)  # number of terms in PCE (N)
         self.parser.add_argument('--sc_sparse_quadrature'      , action='store_true', default=False)
         self.parser.add_argument('--sc_quadrature_rule'        , default='g')
+        self.parser.add_argument('--sc_poly_normed'            , action='store_true', default=False)
+        self.parser.add_argument('--sc_poly_rule'              , default="three_terms_recurrence") # "gram_schmidt" | "three_terms_recurrence" | "cholesky"
         self.parser.add_argument('--sampling_rule'             , default='random')  # "sobol" | "latin_hypercube" | "halton"  | "hammersley"
         self.parser.add_argument('--transformToStandardDist'   , action='store_true', default=False)
         self.parser.add_argument('--config_file')
@@ -283,7 +285,8 @@ class UQsim(object):
                                                                   self.args.regression, rule=self.args.sampling_rule))
                ,"sc"      : (lambda: uqef.simulation.ScSimulation(self.solver, self.args.sc_q_order, self.args.sc_p_order,
                                                                   self.args.sc_quadrature_rule, self.args.sc_sparse_quadrature,
-                                                                  self.args.regression))
+                                                                  self.args.regression,
+                                                                  self.args.sc_poly_normed, self.args.sc_poly_rule))
                ,"saltelli": (lambda: uqef.simulation.SaltelliSimulation(self.solver, self.args.mc_numevaluations, self.args.sc_p_order,
                                                                         self.args.regression, rule=self.args.sampling_rule))
             }
@@ -328,6 +331,7 @@ class UQsim(object):
 
                 solver_time_start = time.time()
 
+                # here is where solver gets self.simulation.parameters
                 self.simulation.prepareSolver()
 
             type = uqef.schedule.Types[self.args.opt_type]

@@ -14,8 +14,7 @@ class SaltelliSimulation(Simulation):
     """
 
     def __init__(self, solver, numEvaluations, p_order, regression=False, *args, **kwargs):
-        #Simulation.__init__(self, "saltelli", solver, *args, **kwargs)
-        Simulation.__init__(self, "saltelli", solver)
+        Simulation.__init__(self, "saltelli", solver, *args, **kwargs)
 
         self.numEvaluations = numEvaluations
         self.p_order = p_order
@@ -36,10 +35,10 @@ class SaltelliSimulation(Simulation):
             temp = nodes
         self.nodes = nodes.T
 
-        d = temp.shape[0]
+        d = simulationNodes.distNodes[0] #temp.shape[0]
         N = self.numEvaluations  # (temp.shape)[1] should be 2*N
         new_dim = N * (d + 2)
-        print("MC & Saltelli INFO: D is %d, N is %d, total number of calcuations will be %d" % (d, N, new_dim))
+        print("MC & Saltelli INFO: D is %d, N is %d, total number of calculations will be %d" % (d, N, new_dim))
         m1 = temp.T[:N].T  # m1.shape = (d,N)
         m2 = temp.T[N:].T  # m2.shape = (d,N)
         print("MC & Saltelli INFO:m1 shape: {}".format(m1.shape))
@@ -52,6 +51,7 @@ class SaltelliSimulation(Simulation):
         matrix_A_B = np.concatenate([self._get_matrix(matrix_A=m1, matrix_B=m2, indices=index) for index in np.eye(d, dtype=bool)], axis=1)
         self.parameters = np.concatenate([matrix_A, matrix_B, matrix_A_B], axis=1)
 
+        #simulationNodes.parameters = self.parameters # TODO
         self.parameters = self.parameters.T  # should be in Saltelli's case N*(d+2) x d
         print("MC & Saltelli INFO: simulation.parameters shape ")
         print(self.parameters.shape)

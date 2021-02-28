@@ -21,7 +21,7 @@ class Simulation(object):
 
     __metaclass__ = ABCMeta  # declare as abstract class
 
-    def __init__(self, name, solver):
+    def __init__(self, name, solver, *args, **kwargs):
         self.name = name
         self.solver = solver
 
