@@ -119,7 +119,7 @@ class UQsim(object):
         self.parser.add_argument('--sc_q_order'                , type=int, default=2)  # number of collocation points in each direction (Q)
         self.parser.add_argument('--sc_p_order'                , type=int, default=1)  # number of terms in PCE (N)
         self.parser.add_argument('--sc_sparse_quadrature'      , action='store_true', default=False)
-        self.parser.add_argument('--sc_quadrature_rule'        , default='g')
+        self.parser.add_argument('--sc_quadrature_rule'        , default='G')
         self.parser.add_argument('--sc_poly_normed'            , action='store_true', default=False)
         self.parser.add_argument('--sc_poly_rule'              , default="three_terms_recurrence") # "gram_schmidt" | "three_terms_recurrence" | "cholesky"
         self.parser.add_argument('--sampling_rule'             , default='random')  # "sobol" | "latin_hypercube" | "halton"  | "hammersley"
@@ -141,7 +141,6 @@ class UQsim(object):
         self.parser.add_argument('--analyse_runtime'           , action='store_true', default=False)
         self.parser.add_argument('--opt_runtime'               , action='store_true', default=False)
         self.parser.add_argument('--opt_runtime_gpce_Dir'      , default=".")
-        self.parser.add_argument('--opt_type'                  , default="WORK_PACKAGE")    # WORK_LIST WORK_PACKAGE
         self.parser.add_argument('--opt_algorithm'             , default="LPT")             # FCFS LPT SPT MULTIFIT
         self.parser.add_argument('--opt_strategy'              , default="DYNAMIC")         # FIXED_ALTERNATE FIXED_LINEAR DYNAMIC
 
@@ -228,7 +227,7 @@ class UQsim(object):
                         dist_parameters_values.append(parameter_config[p])
 
                     if self.args.transformToStandardDist:
-                        #TODO-Ivana: Do this in more elegant way
+                        # TODO: Implement transformation in more elegant and general way
                         if parameter_config["distribution"] == "Normal":
                             self.simulationNodes.setDist(parameter_config["name"],
                                                      getattr(cp, parameter_config["distribution"])())
@@ -304,8 +303,6 @@ class UQsim(object):
             print("Nodes:")
             print(self.simulationNodes.printNodes())
 
-            # TODO: assert nodes
-
     def setup_runtime_estimator(self):
         if self.is_master():
             #####################################
@@ -334,10 +331,6 @@ class UQsim(object):
                 # here is where solver gets self.simulation.parameters
                 self.simulation.prepareSolver()
 
-            type = uqef.schedule.Types[self.args.opt_type]
-            # type      = uqef.schedule.Type.WORK_LIST
-            # type      = uqef.schedule.Type.WORK_PACKAGE
-
             algorithm = uqef.schedule.Algorithms[self.args.opt_algorithm]
             # algorithm = uqef.schedule.Algorithm.FCFS
             # algorithm = uqef.schedule.Algorithm.LPT
@@ -350,14 +343,13 @@ class UQsim(object):
             # strategy  = uqef.schedule.Strategy.DYNAMIC
 
             if self.is_master():
-                print("Opt type: {}".format(list(uqef.schedule.Types.keys())[list(uqef.schedule.Types.values()).index(type)]))
                 print("Opt algorithm: {}".format(list(uqef.schedule.Algorithms.keys())[list(uqef.schedule.Algorithms.values()).index(algorithm)]))
                 print("Opt strategy: {}".format(list(uqef.schedule.Strategies.keys())[list(uqef.schedule.Strategies.values()).index(strategy)]))
                 sys.stdout.flush()
 
             # do the solving => the propagation
             self.solver.solve(runtime_estimator=self.runtime_estimator, chunksize=self.args.chunksize,
-                              type=type, algorithm=algorithm, strategy=strategy)
+                              algorithm=algorithm, strategy=strategy)
 
             if self.is_master():
                 self.solver.tearDown()  # stop the solver
@@ -369,76 +361,90 @@ class UQsim(object):
                 print("solver time: {} sec".format(solver_time))
                 sys.stdout.flush()
 
-    def calc_statistics(self):
+    def calc_statistics(self, **kwargs):
         if self.is_master() and (self.args.disable_statistics is False and self.args.disable_recalc_statistics is False):
             self.statistic = self.statistics[self.args.model]()
             print("calculate statistics [{}]...".format(type(self.statistic).__name__))
-            self.simulation.calculateStatistics(self.statistic, self.simulationNodes, self.runtime_estimator)
+            self.simulation.calculateStatistics(self.statistic, self.simulationNodes, self.runtime_estimator, **kwargs)
 
             if self.args.analyse_runtime is True and self.args.model == "runtime":
                 self.runtime_statistic = self.statistic
             elif self.args.analyse_runtime is True:
                 self.runtime_statistic = self.statistics["runtime"]()
                 print("calculate statistics [{}]...".format(type(self.runtime_statistic).__name__))
-                self.simulation.calculateStatistics(self.runtime_statistic, self.simulationNodes, self.runtime_estimator)
+                self.simulation.calculateStatistics(self.runtime_statistic, self.simulationNodes, self.runtime_estimator, **kwargs)
 
-    def print_statistics(self):
+    def print_statistics(self, **kwargs):
         if self.is_master() and self.args.disable_statistics is False:
             print("print statistics...")
-            print(self.statistic.printResults())
+            print(self.statistic.printResults(**kwargs))
 
             if self.args.analyse_runtime is True and self.args.model != "runtime":
-                print(self.runtime_statistic.printResults())
+                print(self.runtime_statistic.printResults(**kwargs))
 
-    def plot_nodes(self, display=False):
+    def plot_nodes(self, display=False, **kwargs):
         if self.is_master() and self.args.disable_statistics is False:
             print("generate node plots...")
             fileName = self.simulation.name
             self.simulationNodes.plotDists(fileName=fileName, directory=self.args.outputResultDir, display=display)
 
-    def plot_statistics(self, display=False):
+    def plot_statistics(self, display=False, **kwargs):
         if self.is_master() and self.args.disable_statistics is False:
             print("generate stat plots...")
             fileName = self.simulation.name
-            #TODO-Ivana: I might need to transfer simulationNodes as well
-            self.statistic.plotResults(fileName=fileName, directory=self.args.outputResultDir, display=display)
+            self.statistic.plotResults(fileName=fileName, directory=self.args.outputResultDir, display=display, **kwargs)
 
             if self.args.analyse_runtime is True and self.args.model != "runtime":
-                self.runtime_statistic.plotResults(fileName=fileName, directory=self.args.outputResultDir, display=display)
+                self.runtime_statistic.plotResults(fileName=fileName, directory=self.args.outputResultDir, display=display, **kwargs)
+
+    def plot_animations(self, timesteps, display=False, **kwargs):
+        if self.is_master() and self.args.disable_statistics is False:
+            print("generate stat animations...")
+            fileName = self.simulation.name
+            self.statistic.plotAnimation(timesteps, fileName=fileName, directory=self.args.outputResultDir, display=display, **kwargs)
+            if self.args.analyse_runtime is True and self.args.model != "runtime":
+                self.runtime_statistic.plotAnimation(timesteps, fileName=fileName, directory=self.args.outputResultDir, display=display, **kwargs)
 
     def save_simulationNodes(self, fileName=None):
         if self.is_master():
-            if fileName is None: fileName = self.simulation.name
+            print("save simulation nodes...")
+            if fileName is None:
+                fileName = self.simulation.name
             self.simulationNodes.saveToFile(self.args.outputResultDir + "/" + fileName)
 
-    def save_statistics(self):
+    def save_statistics(self, **kwargs):
         if self.is_master() and self.args.disable_statistics is False:
             print("save statistics...")
-            fileName = self.simulation.name
-            #TODO-Ivana: Think how to change this so that it takes less space
-            self.statistic.saveToFile(fileName=fileName, directory=self.args.outputResultDir)
-            # statistics.saveAsNetCdf(timesteps=statistics.timesteps, fileName=fileName, directory=outputResultDir)
-            #    statistics.printCsv(fileName=fileName, directory=outputResultDir)
-            #self.statistic.saveRuntimeData(fileName=fileName, directory=self.args.outputResultDir)
-            #TODO-Ivana: This is better to be done beforehead
-            #self.simulationNodes.saveToFile(self.args.outputResultDir + "/" + fileName)
-            #TODO-Ivana: Think how to change this so that it takes less space
-            #self.simulation.saveToFile(self.args.outputResultDir + "/" + fileName)
+            if 'fileName' in kwargs:
+                fileName = kwargs.get('fileName')
+            if fileName is None:
+                fileName = self.simulation.name
+            self.statistic.saveToFile(fileName=fileName, directory=self.args.outputResultDir, **kwargs)
+            # self.statistics.saveAsNetCdf(timesteps=statistics.timesteps, fileName=fileName, directory=outputResultDir)
+            # self.statistics.printCsv(fileName=fileName, directory=outputResultDir)
+            # self.statistic.saveRuntimeData(fileName=fileName, directory=self.args.outputResultDir)
 
             if self.args.analyse_runtime is True:
                 fileName = fileName + "_runtime"
-                self.runtime_statistic.saveToFile(fileName=fileName, directory=self.args.outputResultDir)
+                self.runtime_statistic.saveToFile(fileName=fileName, directory=self.args.outputResultDir, **kwargs)
                 # statistics.saveAsNetCdf(timesteps=statistics.timesteps, fileName=fileName, directory=outputResultDir)
                 #    statistics.printCsv(fileName=fileName, directory=outputResultDir)
-                self.runtime_statistic.saveRuntimeData(fileName=fileName, directory=self.args.outputResultDir)
+                self.runtime_statistic.saveRuntimeData(fileName=fileName, directory=self.args.outputResultDir, **kwargs)
+
+    def save_simulation(self, fileName=None):
+        if self.is_master():
+            print("save simulation...")
+            if fileName is None:
+                fileName = self.simulation.name
+            self.simulation.saveToFile(self.args.outputResultDir + "/" + fileName)
 
     def tear_down(self):
         if self.is_master():
             self.store_to_file()
 
+        print("rank {}: endtime: {}".format(rank, datetime.datetime.now().strftime('%Y.%m.%d %H:%M:%S')))
         sys.stdout.flush()
 
-    #TODO-Ivana: Think how to rewrite these set of functions such that uqsim.saved is not that big in size (less data is saved)
     @staticmethod
     def load_from_file(file_name):
         with open(file_name, 'rb') as f:

@@ -124,7 +124,7 @@ class TestModelStatistics(Statistics):
                             simulationNodes, numEvaluations, order, regression, solverTimes,
                             work_package_indexes, original_runtime_estimator)
 
-    def printResults(self, timestep=-1, printAllTimeSteps=False):
+    def printResults(self, timestep=-1, printAllTimeSteps=False, **kwargs):
         resultTable = []
         resultTable.append(["qoi", self.E_qoi, self.StdDev_qoi, self.Var_qoi, self.P10_qoi, self.P90_qoi])
 
@@ -135,7 +135,7 @@ class TestModelStatistics(Statistics):
 
     def plotResults(self, timestep=-1, display=False,
                     fileName="", fileNameIdent="", directory="./",
-                    fileNameIdentIsFullName=False, safe=True):
+                    fileNameIdentIsFullName=False, safe=True, **kwargs):
 
         fileName = self.generateFileName(fileName, fileNameIdent, directory, fileNameIdentIsFullName)
 

@@ -45,7 +45,7 @@ class LinearSolver(Solver):
         self.infoModel.prepare()
         
     def solve(self, runtime_estimator=None, chunksize=1,
-              type=schedule.Type.WORK_LIST, algorithm=schedule.Algorithm.FCFS, strategy=schedule.Strategy.FIXED_LINEAR):
+              algorithm=schedule.Algorithm.FCFS, strategy=schedule.Strategy.FIXED_LINEAR):
         work_parameters = self.parameters
         # assert
         self._assertParameters(work_parameters)

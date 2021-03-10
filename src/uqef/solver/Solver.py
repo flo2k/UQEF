@@ -47,16 +47,14 @@ class Solver(object):
 
     @abstractmethod
     def solve(self, runtime_estimator=None, chunksize=1,
-              type=schedule.Type.WORK_LIST, algorithm=schedule.Algorithm.FCFS, strategy=schedule.Strategy.FIXED_LINEAR):
+              algorithm=schedule.Algorithm.FCFS, strategy=schedule.Strategy.FIXED_LINEAR):
         raise NotImplementedError("Should have implemented this")
 
     @abstractmethod
     def _assertParameters(self, parameters):
         raise NotImplementedError("Should have implemented this")
-        
-    def _assertParameter(self, parameter):
-        raise NotImplementedError("Should have implemented this")
-    
+
+    @abstractmethod
     def _normaliseParameters(self, parameters):
         raise NotImplementedError("Should have implemented this")
 

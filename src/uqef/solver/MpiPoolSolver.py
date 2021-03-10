@@ -103,7 +103,7 @@ class MpiPoolSolver(Solver):
         self.infoModel.prepare()
 
     def solve(self, runtime_estimator=None, chunksize=1,
-              type=schedule.Type.WORK_LIST, algorithm=schedule.Algorithm.FCFS, strategy=schedule.Strategy.DYNAMIC):
+              algorithm=schedule.Algorithm.FCFS, strategy=schedule.Strategy.DYNAMIC):
         if self.rank == 0:
             work_parameters = self.parameters
             #assert
@@ -175,8 +175,10 @@ class MpiPoolSolver(Solver):
                                                     chunksize=self.mpi_chunksize, unordered=self.unordered)
 
                 print("{}: waits for shutdown...".format(self.rank))
+                sys.stdout.flush()
                 executor.shutdown(wait=True)
                 print("{}: shutted down...".format(self.rank))
+                sys.stdout.flush()
 
                 solver_time_end = time.time()
 
@@ -207,6 +209,7 @@ class MpiPoolSolver(Solver):
                 t_estimate_restore_order_end = time.time()
                 t_estimate_restore_order = t_estimate_restore_order_end - t_estimate_restore_order_start
                 print("t_estimate_restore_order: {}".format(t_estimate_restore_order))
+                sys.stdout.flush()
 
                 self.solverTimes.t_estimate_runtime = t_estimate_runtime
                 self.solverTimes.t_wp_creation = t_wp_creation
@@ -220,6 +223,7 @@ class MpiPoolSolver(Solver):
                 solver_time = solver_time_end - solver_time_start
                 # solver_time -= self.solverTimes.T_C
                 print("xx solver_time: {}".format(solver_time))
+                sys.stdout.flush()
                 # solver times
                 self.solverTimes.T_i_S = np.array(runtimes)
 

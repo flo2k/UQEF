@@ -118,8 +118,8 @@ class RuntimeStatistics(Statistics):
         self.calc_stats_for_gPCE(dist)
 
         # qoi_dists
-        delta = 2
-        self.qoi_dist_sampling = np.linspace(samples.runtime.min() - delta, samples.runtime.max() + delta, 1e4, endpoint=True)
+        delta = 2.0
+        self.qoi_dist_sampling = np.linspace(samples.runtime.min() - delta, samples.runtime.max() + delta, 10**4, endpoint=True)
         print(self.qoi_dist_sampling)
 
         qoi_dist_runtime = cp.QoI_Dist(self.GPCe_runtime, dist, sample=5e4)
@@ -241,7 +241,7 @@ class RuntimeStatistics(Statistics):
                             simulationNodes, numEvaluations, order, regression, solverTimes,
                             work_package_indexes, original_runtime_estimator)
 
-    def printResults(self, timestep=-1, printAllTimeSteps=False):
+    def printResults(self, timestep=-1, printAllTimeSteps=False, **kwargs):
         # print results
         resultTable = []
         resultTable.append(["E_runtime", self.E_runtime, self.StdDev_runtime, self.Var_runtime, self.P5_runtime, self.P95_runtime])
@@ -316,7 +316,7 @@ class RuntimeStatistics(Statistics):
         
     def plotResults(self, timestep=-1, display=False, 
                     fileName="", fileNameIdent="", directory="./", 
-                    fileNameIdentIsFullName=False, safe=True):
+                    fileNameIdentIsFullName=False, safe=True, **kwargs):
 
         fileName = self.generateFileName(fileName, fileNameIdent, directory, fileNameIdentIsFullName)
 
@@ -768,7 +768,8 @@ class RuntimeStatistics(Statistics):
 
     def saveRuntimeData(self,
                         fileName="", fileNameIdent="", directory="./",
-                        fileNameIdentIsFullName=False
+                        fileNameIdentIsFullName=False,
+                        **kwargs
                         ):
         fileName = self.generateFileName(fileName, fileNameIdent, directory, fileNameIdentIsFullName)
 
