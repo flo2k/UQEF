@@ -26,17 +26,17 @@ class Statistics(object):
 
     def calcStatisticsForMc(self, rawSamples, timesteps,
                             simulationNodes, numEvaluations, order, regression, solverTimes,
-                            work_package_indexes, original_runtime_estimator=None):
+                            work_package_indexes, original_runtime_estimator=None, *args, **kwargs):
         pass
 
     def calcStatisticsForSc(self, rawSamples, timesteps,
-                            simulationNodes, order, regression, solverTimes,
-                            work_package_indexes, original_runtime_estimator=None):
+                            simulationNodes, order, regression, poly_normed, poly_rule, solverTimes,
+                            work_package_indexes, original_runtime_estimator=None, *args, **kwargs):
         pass
 
     def calcStatisticsForSaltelli(self, rawSamples, timesteps,
                             simulationNodes, numEvaluations, order, regression, solverTimes,
-                            work_package_indexes, original_runtime_estimator=None):
+                            work_package_indexes, original_runtime_estimator=None, *args, **kwargs):
         pass
 
     def printResults(self, timestep=-1, **kwargs):

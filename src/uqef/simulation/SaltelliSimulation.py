@@ -14,25 +14,33 @@ class SaltelliSimulation(Simulation):
     """
 
     def __init__(self, solver, numEvaluations, p_order, regression=False, *args, **kwargs):
-        Simulation.__init__(self, "mc", solver, *args, **kwargs)
+        Simulation.__init__(self, "saltelli", solver, *args, **kwargs)
 
         self.numEvaluations = numEvaluations
         self.p_order = p_order
         self.regression = regression
 
+        self.rule = kwargs.get('rule') if 'rule' in kwargs else 'R'
+
     def getSetup(self):
         return "%s running %d evaluations" % (type(self).__name__, self.numEvaluations*2)
 
     def generateSimulationNodes(self, simulationNodes):
-        nodes = simulationNodes.generateNodesForMC(self.numEvaluations*2)
+        nodes, parameters = simulationNodes.generateNodesForMC(
+            numSamples=self.numEvaluations*2, rule=self.rule)
 
-        # nodes = nodes.T #nodes should be now nxd
-        d = nodes.shape[0]
-        N = self.numEvaluations  # (nodes.shape)[1] should be 2*N
+        if parameters is not None:
+            temp = parameters
+        else:
+            temp = nodes
+        self.nodes = nodes.T
+
+        d = simulationNodes.distNodes[0] #temp.shape[0]
+        N = self.numEvaluations  # (temp.shape)[1] should be 2*N
         new_dim = N * (d + 2)
-        print("MC & Saltelli INFO: D is %d, N is %d, total number of calcuations will be %d" % (d, N, new_dim))
-        m1 = nodes.T[:N].T  # m1.shape = (d,N)
-        m2 = nodes.T[N:].T  # m2.shape = (d,N)
+        print("MC & Saltelli INFO: D is %d, N is %d, total number of calculations will be %d" % (d, N, new_dim))
+        m1 = temp.T[:N].T  # m1.shape = (d,N)
+        m2 = temp.T[N:].T  # m2.shape = (d,N)
         print("MC & Saltelli INFO:m1 shape: {}".format(m1.shape))
         print("MC & Saltelli INFO:m2 shape: {}".format(m2.shape))
 
@@ -43,10 +51,10 @@ class SaltelliSimulation(Simulation):
         matrix_A_B = np.concatenate([self._get_matrix(matrix_A=m1, matrix_B=m2, indices=index) for index in np.eye(d, dtype=bool)], axis=1)
         self.parameters = np.concatenate([matrix_A, matrix_B, matrix_A_B], axis=1)
 
+        #simulationNodes.parameters = self.parameters # TODO
         self.parameters = self.parameters.T  # should be in Saltelli's case N*(d+2) x d
         print("MC & Saltelli INFO: simulation.parameters shape ")
         print(self.parameters.shape)
-
 
     def calculateStatistics(self, statistics, simulationNodes, original_runtime_estimator=None):
             model_results = self.solver.results
@@ -65,8 +73,8 @@ class SaltelliSimulation(Simulation):
     @staticmethod
     def _get_matrix(matrix_A, matrix_B, indices):
         """Retrieve Saltelli matrix.
-        Input matrices shoul be of dimension dim x number_of_samples
-        len(indices) shoul be equal to the dim
+        Input matrices should be of dimension dim x number_of_samples
+        len(indices) should be equal to the dim
 
         Return: A_B matrix from Saltelli 2010 paper
         """
