@@ -58,6 +58,10 @@ class Solver(object):
     def _normaliseParameters(self, parameters):
         raise NotImplementedError("Should have implemented this")
 
+    @abstractmethod
+    def timesteps(self):
+        raise NotImplementedError("Should have implemented this")
+
     def _estimateWorkRuntime(self, work_parameters, runtime_estimator):
         if runtime_estimator:
             estimated_runtimes = [runtime_estimator(*p) for p in work_parameters]
