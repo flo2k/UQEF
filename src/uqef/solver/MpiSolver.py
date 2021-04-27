@@ -187,7 +187,7 @@ class MpiSolver(Solver):
             self.results = results
             #print "results: " + str(np.array(results, dtype=object).shape)
             #print "results: " + str(self.results)
-            self.timesteps = self.infoModel.timesteps()
+            # self.timesteps = self.infoModel.timesteps()
 
         if self.rank == 0:
             #scatter_time = scatter_time_end - scatter_time_start
@@ -238,4 +238,5 @@ class MpiSolver(Solver):
         pass
 
     def timesteps(self):
-        self.infoModel.timesteps()
+        self.timesteps = self.infoModel.timesteps()
+        return self.timesteps

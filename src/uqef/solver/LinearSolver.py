@@ -134,11 +134,9 @@ class LinearSolver(Solver):
 
         self.solverTimes.T_Prop = self.solverTimes.T_SWP_worker + self.solverTimes.T_S_overhead + self.solverTimes.T_C
 
-
-
         # remember results
         self.results = results
-        self.timesteps = self.infoModel.timesteps()
+        # self.timesteps = self.infoModel.timesteps()
 
     def _assertParameters(self, parameters):
         for parameter in parameters:
@@ -151,6 +149,10 @@ class LinearSolver(Solver):
             norm_paras.append(norm_para)
 
         return np.array(norm_paras)
+
+    def timesteps(self):
+        self.timesteps = self.infoModel.timesteps()
+        return self.timesteps
 
     def estimate_TProp(self, runtime_estimator=None, chunksize=1):
         pass

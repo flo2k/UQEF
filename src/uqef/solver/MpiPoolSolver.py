@@ -27,35 +27,35 @@ from joblib import Parallel, delayed
 
 
 def _parallelSolve(model_generator, i_s, p_s):
-    #print "i_s: " + str(i_s)
-    #print "p_s: " + str(p_s)
+    # print "i_s: " + str(i_s)
+    # print "p_s: " + str(p_s)
 
     model = model_generator()
     model.prepare()
-    
-#     rank = MPI.COMM_WORLD.Get_rank()
-#     print "rank: " + str(rank) + " runs: " + str(i)
-    
+
+    #     rank = MPI.COMM_WORLD.Get_rank()
+    #     print "rank: " + str(rank) + " runs: " + str(i)
+
     result = model.run(i_s, p_s)
 
-    #print "results: " + str(np.asarray(result).shape)
+    # print "results: " + str(np.asarray(result).shape)
 
     return result
 
 
 def _combinedParallelSolve(model_generator, i_s, p_s, num_cores):
-    #print "c_i_s: " + str(i_s)
-    #print "c_p_s: " + str(p_s)
+    # print "c_i_s: " + str(i_s)
+    # print "c_p_s: " + str(p_s)
 
-    #num_cores = multiprocessing.cpu_count()
-#    parallelSolver = ParallelSolver(model_generator, num_cores)
+    # num_cores = multiprocessing.cpu_count()
+    #    parallelSolver = ParallelSolver(model_generator, num_cores)
 
     paralleliser = Parallel(n_jobs=num_cores, verbose=5)
     results = paralleliser(delayed(_parallelSolve)(model_generator, [i], [p]) for (i, p) in zip(i_s, p_s))
 
-    #print "results: " + str(np.asarray(results).shape)
+    # print "results: " + str(np.asarray(results).shape)
 
-#    parallelSolver.solve()
+    #    parallelSolver.solve()
 
     return results
 
@@ -65,7 +65,8 @@ class MpiPoolSolver(Solver):
     MpiPoolSolver solves the work packages in parallel using a MPI pool
     """
 
-    def __init__(self, model_generator, mpi_chunksize=1, unordered=False, normaliseParams=False, combinedParallel=False, num_cores=1):
+    def __init__(self, model_generator, mpi_chunksize=1, unordered=False, normaliseParams=False, combinedParallel=False,
+                 num_cores=1):
         Solver.__init__(self)
 
         # behavior
@@ -74,13 +75,14 @@ class MpiPoolSolver(Solver):
         self.unordered = unordered
         self.normaliseParams = normaliseParams
         self.combinedParallel = combinedParallel
-        
-        self.infoModel = model_generator()
-        
+
         self.size = MPI.COMM_WORLD.Get_size()
         self.rank = MPI.COMM_WORLD.Get_rank()
         self.name = MPI.Get_processor_name()
         self.version = MPI.Get_library_version()
+
+        if self.rank == 0:
+            self.infoModel = model_generator()
 
         self.numCores = num_cores
 
@@ -88,25 +90,27 @@ class MpiPoolSolver(Solver):
             self.parallel_solvers_per_work_package = np.array([num_cores] * self.size)
         else:
             self.parallel_solvers_per_work_package = np.ones(self.size)
-        
+
     def getSetup(self):
-        return "%s using %d num mpi processes (mpi_chunksize=%d) with each %d cores" % (type(self).__name__, self.size, self.mpi_chunksize, self.numCores)
-        
+        return "%s using %d num mpi processes (mpi_chunksize=%d) with each %d cores" % (
+        type(self).__name__, self.size, self.mpi_chunksize, self.numCores)
+
     def init(self):
         pass
-    
+
     def tearDown(self):
         pass
-        
+
     def prepare(self, parameters):
         self.parameters = parameters
-        self.infoModel.prepare()
+        if self.rank == 0:
+            self.infoModel.prepare()
 
     def solve(self, runtime_estimator=None, chunksize=1,
               algorithm=schedule.Algorithm.FCFS, strategy=schedule.Strategy.DYNAMIC):
         if self.rank == 0:
             work_parameters = self.parameters
-            #assert
+            # assert
             self._assertParameters(work_parameters)
             work_parameters = self._normaliseParameters(work_parameters)
             self._assertParameters(work_parameters)
@@ -142,14 +146,15 @@ class MpiPoolSolver(Solver):
                 parameterChunks = list(more_itertools.chunked(work_parameters, chunksize))
                 chunks = zip(i_s_chunk, parameterChunks)
 
-                #i_s_chunk = self.work_package_indexes
-                #parameterChunks = [work_parameters[i_s] for i_s in i_s_chunk]
-                #chunks = zip(i_s_chunk, parameterChunks)
-                #dataToSend = chunks
-                #print(len(dataToSend))
+                # i_s_chunk = self.work_package_indexes
+                # parameterChunks = [work_parameters[i_s] for i_s in i_s_chunk]
+                # chunks = zip(i_s_chunk, parameterChunks)
+                # dataToSend = chunks
+                # print(len(dataToSend))
 
             elif strategy in [schedule.Strategy.FIXED_ALTERNATE, schedule.Strategy.FIXED_LINEAR]:
-                raise NotImplementedError("Strategy.FIXED_ALTERNATE or Strategy.FIXED_LINEAR not supported by MpiPoolSolver!")
+                raise NotImplementedError(
+                    "Strategy.FIXED_ALTERNATE or Strategy.FIXED_LINEAR not supported by MpiPoolSolver!")
 
             sorted_indexes = []
             for i_s_c in i_s_chunk:
@@ -163,15 +168,17 @@ class MpiPoolSolver(Solver):
 
         # do the simulation
         with futures.MPICommExecutor(MPI.COMM_WORLD, root=0) as executor:
-            if executor is not None: # master process
+            if executor is not None:  # master process
                 solver_time_start = time.time()
 
                 if self.combinedParallel == False:
-                    chunk_results_it = executor.map(_parallelSolve, [self.model_generator] * len(i_s_chunk), i_s_chunk, parameterChunks,
+                    chunk_results_it = executor.map(_parallelSolve, [self.model_generator] * len(i_s_chunk), i_s_chunk,
+                                                    parameterChunks,
                                                     chunksize=self.mpi_chunksize, unordered=self.unordered)
                 else:
-                    chunk_results_it = executor.map(_combinedParallelSolve, [self.model_generator] * len(i_s_chunk), i_s_chunk,
-                                                    parameterChunks, [self.numCores]*len(i_s_chunk),
+                    chunk_results_it = executor.map(_combinedParallelSolve, [self.model_generator] * len(i_s_chunk),
+                                                    i_s_chunk,
+                                                    parameterChunks, [self.numCores] * len(i_s_chunk),
                                                     chunksize=self.mpi_chunksize, unordered=self.unordered)
 
                 print("{}: waits for shutdown...".format(self.rank))
@@ -182,7 +189,7 @@ class MpiPoolSolver(Solver):
 
                 solver_time_end = time.time()
 
-                #print "chunk_results: " + str(chunk_results)
+                # print "chunk_results: " + str(chunk_results)
                 chunk_results = list(chunk_results_it)
 
                 results = []
@@ -196,9 +203,9 @@ class MpiPoolSolver(Solver):
                         else:
                             results.append(result[0])
                             runtimes.append(result[1])
-                
-#                 for r in results:
-#                     print "result = " + str(r)
+
+                #                 for r in results:
+                #                     print "result = " + str(r)
 
                 t_estimate_restore_order_start = time.time()
 
@@ -216,9 +223,9 @@ class MpiPoolSolver(Solver):
                 self.solverTimes.t_estimate_restore_order = t_estimate_restore_order
 
                 self.results = results
-                #print "results: " + str(np.array(results, dtype=object).shape)
-                #print "results: " + str(self.results)
-                self.timesteps = self.infoModel.timesteps()
+                # print "results: " + str(np.array(results, dtype=object).shape)
+                # print "results: " + str(self.results)
+                # self.timesteps = self.infoModel.timesteps()
 
                 solver_time = solver_time_end - solver_time_start
                 # solver_time -= self.solverTimes.T_C
@@ -247,14 +254,16 @@ class MpiPoolSolver(Solver):
                 self.solverTimes.T_Prop = self.solverTimes.T_SWP_worker + self.solverTimes.T_S_overhead + self.solverTimes.T_C
 
     def _assertParameters(self, parameters):
-        for parameter in parameters:
-            self.infoModel.assertParameter(parameter)
+        if self.rank == 0:
+            for parameter in parameters:
+                self.infoModel.assertParameter(parameter)
 
     def _normaliseParameters(self, parameters):
         norm_paras = []
-        for parameter in parameters:
-            norm_para = self.infoModel.normaliseParameter(parameter)
-            norm_paras.append(norm_para)
+        if self.rank == 0:
+            for parameter in parameters:
+                norm_para = self.infoModel.normaliseParameter(parameter)
+                norm_paras.append(norm_para)
 
         return np.array(norm_paras)
 
@@ -262,4 +271,6 @@ class MpiPoolSolver(Solver):
         pass
 
     def timesteps(self):
-        self.infoModel.timesteps()
+        if self.rank == 0:
+            self.timesteps = self.infoModel.timesteps()
+        return self.timesteps
