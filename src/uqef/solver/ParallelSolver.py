@@ -190,7 +190,7 @@ class ParallelSolver(Solver):
 
         #remember results
         self.results = results
-        # self.timesteps = self.infoModel.timesteps()
+        # self._timesteps = self.infoModel.timesteps()
 
     def _assertParameters(self, parameters):
         for parameter in parameters:
@@ -205,8 +205,8 @@ class ParallelSolver(Solver):
         return np.array(norm_paras)
 
     def timesteps(self):
-        self.timesteps = self.infoModel.timesteps()
-        return self.timesteps
+        self._timesteps = self.infoModel.timesteps()
+        return self._timesteps
 
     def estimate_TProp(self, runtime_estimator=None, chunksize=1):
         pass

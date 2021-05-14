@@ -120,8 +120,8 @@ class UQsim(object):
         self.parser.add_argument('--sc_p_order'                , type=int, default=1)  # number of terms in PCE (N)
         self.parser.add_argument('--sc_sparse_quadrature'      , action='store_true', default=False)
         self.parser.add_argument('--sc_quadrature_rule'        , default='G')
-        self.parser.add_argument('--sc_poly_normed'            , action='store_true', default=False)
-        self.parser.add_argument('--sc_poly_rule'              , default="three_terms_recurrence") # "gram_schmidt" | "three_terms_recurrence" | "cholesky"
+        self.parser.add_argument('--sc_poly_normed'               , action='store_true', default=False)
+        self.parser.add_argument('--sc_poly_rule'                 , default="three_terms_recurrence") # "gram_schmidt" | "three_terms_recurrence" | "cholesky"
         self.parser.add_argument('--sampling_rule'             , default='random')  # "sobol" | "latin_hypercube" | "halton"  | "hammersley"
         self.parser.add_argument('--transformToStandardDist'   , action='store_true', default=False)
         self.parser.add_argument('--config_file')
@@ -132,6 +132,11 @@ class UQsim(object):
         self.parser.add_argument('--mpi'                       , action='store_true')
         self.parser.add_argument('--mpi_method'                , default="MpiPoolSolver")  # MpiPoolSolver: DWP, MpiSolver: SWP, SWPT
         self.parser.add_argument('--mpi_combined_parallel'     , action='store_true', default=False)
+
+        # Statistics settings
+        self.parser.add_argument('--parallel_statistics'       , action='store_true', default=False)
+        self.parser.add_argument('--compute_Sobol_t'           , action='store_true', default=True)
+        self.parser.add_argument('--compute_Sobol_m'           , action='store_true', default=True)
 
         # Chunk parameters
         self.parser.add_argument('--chunksize'                 , type=int, default=1)
@@ -227,19 +232,21 @@ class UQsim(object):
                         dist_parameters_values.append(parameter_config[p])
 
                     if self.args.transformToStandardDist:
-                        # TODO: Implement transformation in more elegant and general way
+                        # TODO: Implement transformation in more elegant and general way, e.g., with CDF^(-1)(u) or Rosenblatt
+                        # TODO: do vector-wise transformation
                         if parameter_config["distribution"] == "Normal":
                             self.simulationNodes.setDist(parameter_config["name"],
                                                      getattr(cp, parameter_config["distribution"])())
-                            transformation_param_tuple = (parameter_config["mu"], parameter_config["sigma"])
+                            L = chol(parameter_config["sigma"])
+                            transformation_param_tuple = (parameter_config["mu"], L)
                             transformation_distribution = lambda x, mu, std: mu + std * x
                         elif parameter_config["distribution"] == "Uniform":
-                            if self.args.uq_method == "sc":
+                            if self.args.uq_method == "sc": # sample from U[-1,1]
                                 self.simulationNodes.setDist(parameter_config["name"],
                                                          getattr(cp, parameter_config["distribution"])(lower=-1, upper=1))
                                 _a = (parameter_config["lower"] + parameter_config["upper"]) / 2
                                 _b = (parameter_config["upper"] - parameter_config["lower"]) / 2
-                            else:
+                            else: # sample from U[0,1]
                                 self.simulationNodes.setDist(parameter_config["name"],
                                                          getattr(cp, parameter_config["distribution"])(lower=0, upper=1))
                                 _a = parameter_config["lower"]
@@ -280,14 +287,26 @@ class UQsim(object):
     def setup_simulation(self):
         if self.is_master():
             simulations = {
-                "mc"      : (lambda: uqef.simulation.McSimulation(self.solver, self.args.mc_numevaluations, self.args.sc_p_order,
-                                                                  self.args.regression, rule=self.args.sampling_rule))
-               ,"sc"      : (lambda: uqef.simulation.ScSimulation(self.solver, self.args.sc_q_order, self.args.sc_p_order,
-                                                                  self.args.sc_quadrature_rule, self.args.sc_sparse_quadrature,
+                "mc"      : (lambda: uqef.simulation.McSimulation(self.solver,
+                                                                  self.args.mc_numevaluations,
+                                                                  self.args.sc_p_order,
+                                                                  self.args.sampling_rule,
                                                                   self.args.regression,
-                                                                  self.args.sc_poly_normed, self.args.sc_poly_rule))
-               ,"saltelli": (lambda: uqef.simulation.SaltelliSimulation(self.solver, self.args.mc_numevaluations, self.args.sc_p_order,
-                                                                        self.args.regression, rule=self.args.sampling_rule))
+                                                                  self.args.sc_poly_normed,
+                                                                  self.args.sc_poly_rule))
+                , "sc"      : (lambda: uqef.simulation.ScSimulation(self.solver,
+                                                                    self.args.sc_q_order,
+                                                                    self.args.sc_p_order,
+                                                                    self.args.sc_quadrature_rule,
+                                                                    self.args.sc_sparse_quadrature,
+                                                                    self.args.regression,
+                                                                    self.args.sc_poly_normed,
+                                                                    self.args.sc_poly_rule))
+                , "saltelli": (lambda: uqef.simulation.SaltelliSimulation(self.solver,
+                                                                          self.args.mc_numevaluations,
+                                                                          self.args.sc_p_order,
+                                                                          self.args.sc_poly_normed,
+                                                                          self.args.sc_poly_rule))
             }
             self.simulation = simulations[self.args.uq_method]()
 
@@ -362,17 +381,31 @@ class UQsim(object):
                 sys.stdout.flush()
 
     def calc_statistics(self, **kwargs):
-        if self.is_master() and (self.args.disable_statistics is False and self.args.disable_recalc_statistics is False):
-            self.statistic = self.statistics[self.args.model]()
-            print("calculate statistics [{}]...".format(type(self.statistic).__name__))
-            self.simulation.calculateStatistics(self.statistic, self.simulationNodes, self.runtime_estimator, **kwargs)
+        if self.args.disable_statistics is False and self.args.disable_recalc_statistics is False:
+            if self.args.mpi is True and self.args.parallel_statistics is True:
+                self.statistic = self.statistics[self.args.model]()
+                if self.is_master():
+                    self.simulation.prepareStatistic(self.statistic, self.simulationNodes)
+                calculateStatistics = {
+                    "mc"       : (lambda: self.statistic.calcStatisticsForMcParallel(chunksize=self.args.chunksize,
+                                                                                     regression=self.args.regression))
+                    ,"sc"      : (lambda: self.statistic.calcStatisticsForScParallel(chunksize=self.args.chunksize,
+                                                                                     regression=self.args.regression))
+                    ,"saltelli": (lambda: self.statistic.calcStatisticsForSaltelliParallel(chunksize=self.args.chunksize,
+                                                                                           regression=self.args.regression))
+                }
+                calculateStatistics[self.args.uq_method]()
+            elif self.is_master():
+                self.statistic = self.statistics[self.args.model]()
+                print("calculate statistics [{}]...".format(type(self.statistic).__name__))
+                self.simulation.calculateStatistics(self.statistic, self.simulationNodes, self.runtime_estimator, **kwargs)
 
-            if self.args.analyse_runtime is True and self.args.model == "runtime":
-                self.runtime_statistic = self.statistic
-            elif self.args.analyse_runtime is True:
-                self.runtime_statistic = self.statistics["runtime"]()
-                print("calculate statistics [{}]...".format(type(self.runtime_statistic).__name__))
-                self.simulation.calculateStatistics(self.runtime_statistic, self.simulationNodes, self.runtime_estimator, **kwargs)
+                if self.args.analyse_runtime is True and self.args.model == "runtime":
+                    self.runtime_statistic = self.statistic
+                elif self.args.analyse_runtime is True:
+                    self.runtime_statistic = self.statistics["runtime"]()
+                    print("calculate statistics [{}]...".format(type(self.runtime_statistic).__name__))
+                    self.simulation.calculateStatistics(self.runtime_statistic, self.simulationNodes, self.runtime_estimator, **kwargs)
 
     def print_statistics(self, **kwargs):
         if self.is_master() and self.args.disable_statistics is False:

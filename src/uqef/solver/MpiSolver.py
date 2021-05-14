@@ -56,7 +56,8 @@ class MpiSolver(Solver):
         self.normaliseParams = normaliseParams
         self.combinedParallel = combinedParallel
 
-        self.infoModel = model_generator()
+        if self.rank == 0:
+            self.infoModel = model_generator()
 
         self.size = MPI.COMM_WORLD.Get_size()
         self.rank = MPI.COMM_WORLD.Get_rank()
@@ -80,7 +81,8 @@ class MpiSolver(Solver):
 
     def prepare(self, parameters):
         self.parameters = parameters
-        self.infoModel.prepare()
+        if self.rank == 0:
+            self.infoModel.prepare()
 
     def solve(self, runtime_estimator=None, chunksize=1,
               algorithm=schedule.Algorithm.FCFS, strategy=schedule.Strategy.FIXED_LINEAR):
@@ -187,7 +189,7 @@ class MpiSolver(Solver):
             self.results = results
             #print "results: " + str(np.array(results, dtype=object).shape)
             #print "results: " + str(self.results)
-            # self.timesteps = self.infoModel.timesteps()
+            # self._timesteps = self.infoModel.timesteps()
 
         if self.rank == 0:
             #scatter_time = scatter_time_end - scatter_time_start
@@ -238,5 +240,5 @@ class MpiSolver(Solver):
         pass
 
     def timesteps(self):
-        self.timesteps = self.infoModel.timesteps()
-        return self.timesteps
+        self._timesteps = self.infoModel.timesteps()
+        return self._timesteps

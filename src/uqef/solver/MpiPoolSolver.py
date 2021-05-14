@@ -33,12 +33,12 @@ def _parallelSolve(model_generator, i_s, p_s):
     model = model_generator()
     model.prepare()
 
-    #     rank = MPI.COMM_WORLD.Get_rank()
-    #     print "rank: " + str(rank) + " runs: " + str(i)
+    # rank = MPI.COMM_WORLD.Get_rank()
+    # print (f"rank: {rank} runs: {i}")
 
     result = model.run(i_s, p_s)
 
-    # print "results: " + str(np.asarray(result).shape)
+    # print (f"results: {np.asarray(result).shape}")
 
     return result
 
@@ -225,7 +225,7 @@ class MpiPoolSolver(Solver):
                 self.results = results
                 # print "results: " + str(np.array(results, dtype=object).shape)
                 # print "results: " + str(self.results)
-                # self.timesteps = self.infoModel.timesteps()
+                # self._timesteps = self.infoModel.timesteps()
 
                 solver_time = solver_time_end - solver_time_start
                 # solver_time -= self.solverTimes.T_C
@@ -272,5 +272,5 @@ class MpiPoolSolver(Solver):
 
     def timesteps(self):
         if self.rank == 0:
-            self.timesteps = self.infoModel.timesteps()
-        return self.timesteps
+            self._timesteps = self.infoModel.timesteps()
+        return self._timesteps
