@@ -37,7 +37,14 @@ class Simulation(object):
         self.solver.prepare(self.parameters)
 
     @abstractmethod
-    def calculateStatistics(self, statistics, simulationNodes, original_runtime_estimator=None):
+    def prepareStatistic(self, statistics, simulationNodes, original_runtime_estimator=None, *args, **kwargs):
+        """
+        Call this function when you need to setup a parallel statistics
+        """
+        raise NotImplementedError("Should have implemented this")
+
+    @abstractmethod
+    def calculateStatistics(self, statistics, simulationNodes, original_runtime_estimator=None, *args, **kwargs):
         raise NotImplementedError("Should have implemented this")
 
     def saveToFile(self, fileName):

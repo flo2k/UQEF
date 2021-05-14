@@ -37,7 +37,7 @@ class TestModelStatistics(Statistics):
                             simulationNodes, numEvaluations, order,
                             regression,
                             solverTimes,
-                            work_package_indexes, original_runtime_estimator):
+                            work_package_indexes, original_runtime_estimator, *args, **kwargs):
         self.timesteps = timesteps
         self.numTimeSteps = len(self.timesteps)
         samples = Samples(rawSamples, self.numTimeSteps)
@@ -69,7 +69,7 @@ class TestModelStatistics(Statistics):
 
     def calcStatisticsForSc(self, rawSamples, timesteps,
                             simulationNodes, order, regression, solverTimes,
-                            work_package_indexes, original_runtime_estimator):
+                            work_package_indexes, original_runtime_estimator, *args, **kwargs):
         nodes = simulationNodes.distNodes
         weights = simulationNodes.weights
         dist = simulationNodes.joinedDists
@@ -118,7 +118,7 @@ class TestModelStatistics(Statistics):
 
     def calcStatisticsForSaltelli(self, rawSamples, timesteps,
                             simulationNodes, numEvaluations, order, regression, solverTimes,
-                            work_package_indexes, original_runtime_estimator=None):
+                            work_package_indexes, original_runtime_estimator=None, *args, **kwargs):
         # TODO: do some tests with separate implementation of Saltelli stats
         self.calcStatisticsForMc(rawSamples, timesteps,
                             simulationNodes, numEvaluations, order, regression, solverTimes,

@@ -24,8 +24,32 @@ class Statistics(object):
         self.timesteps = np.array([])
         pass
 
+    def prepare(self, rawSamples, **kwargs):
+        pass
+
+    def set_nodes(self, simulationNodes):
+        pass
+
+    def preparePolyExpanForMc(self, simulationNodes, regression, order, poly_normed, poly_rule, *args, **kwargs):
+        pass
+
+    def preparePolyExpanForSc(self, simulationNodes, order, poly_normed, poly_rule, *args, **kwargs):
+        pass
+
+    def preparePolyExpanForSaltelli(self, simulationNodes, regression, order, poly_normed, poly_rule, *args, **kwargs):
+        pass
+
+    def calcStatisticsForMcParallel(self, chunksize=1, *args, **kwargs):
+        pass
+
+    def calcStatisticsForScParallel(self, chunksize=1, *args, **kwargs):
+        pass
+
+    def calcStatisticsForSaltelliParallel(self, chunksize=1, *args, **kwargs):
+        pass
+
     def calcStatisticsForMc(self, rawSamples, timesteps,
-                            simulationNodes, numEvaluations, order, regression, solverTimes,
+                            simulationNodes, numEvaluations, order, regression, poly_normed, poly_rule, solverTimes,
                             work_package_indexes, original_runtime_estimator=None, *args, **kwargs):
         pass
 
@@ -35,7 +59,7 @@ class Statistics(object):
         pass
 
     def calcStatisticsForSaltelli(self, rawSamples, timesteps,
-                            simulationNodes, numEvaluations, order, regression, solverTimes,
+                            simulationNodes, numEvaluations, order, regression, poly_normed, poly_rule, solverTimes,
                             work_package_indexes, original_runtime_estimator=None, *args, **kwargs):
         pass
 

@@ -24,7 +24,7 @@ class Solver(object):
 
     def __init__(self):
         self.results = np.array([])
-        self.timesteps = np.array([])
+        self._timesteps = np.array([])
 
         self.solverTimes = SolverTimes()
         pass

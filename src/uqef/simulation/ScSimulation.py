@@ -13,8 +13,7 @@ class ScSimulation(Simulation):
     """
 
     def __init__(self, solver, q_order, p_order, rule="G", sparse_quadrature=False, regression=False,
-                 poly_normed=False, poly_rule="three_terms_recurrence",
-                 *args, **kwargs):
+                 poly_normed=False, poly_rule="three_terms_recurrence", *args, **kwargs):
         Simulation.__init__(self, "sc", solver, *args, **kwargs)
 
         self.q_order = q_order
@@ -40,7 +39,15 @@ class ScSimulation(Simulation):
         self.nodes = nodes
         self.weights = weights
 
-    def calculateStatistics(self, statistics, simulationNodes, original_runtime_estimator=None):
+    def prepareStatistic(self, statistics, simulationNodes, original_runtime_estimator=None, *args, **kwargs):
+        timesteps = self.solver.timesteps()
+        statistics.prepare(rawSamples=self.solver.results,
+                           timesteps=timesteps,
+                           solverTimes=self.solver.solverTimes,
+                           work_package_indexes=self.solver.work_package_indexes)
+        statistics.preparePolyExpanForSc(simulationNodes, self.p_order, self.poly_normed, self.poly_rule)
+
+    def calculateStatistics(self, statistics, simulationNodes, original_runtime_estimator=None, *args, **kwargs):
         model_results = self.solver.results
         timesteps = self.solver.timesteps()
         solverTimes = self.solver.solverTimes
@@ -51,7 +58,7 @@ class ScSimulation(Simulation):
                                        self.poly_normed,
                                        self.poly_rule,
                                        solverTimes,
-                                       self.solver.work_package_indexes, self.original_runtime_estimator)
+                                       self.solver.work_package_indexes, self.original_runtime_estimator, *args, **kwargs)
         
-        return statistics
+        return statistics  # TODO remove return?
 
