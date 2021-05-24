@@ -237,8 +237,8 @@ class UQsim(object):
                         if parameter_config["distribution"] == "Normal":
                             self.simulationNodes.setDist(parameter_config["name"],
                                                      getattr(cp, parameter_config["distribution"])())
-                            L = chol(parameter_config["sigma"])
-                            transformation_param_tuple = (parameter_config["mu"], L)
+                            # L = np.linalg.cholesky(parameter_config["sigma"])
+                            transformation_param_tuple = (parameter_config["mu"], parameter_config["sigma"])
                             transformation_distribution = lambda x, mu, std: mu + std * x
                         elif parameter_config["distribution"] == "Uniform":
                             if self.args.uq_method == "sc": # sample from U[-1,1]
