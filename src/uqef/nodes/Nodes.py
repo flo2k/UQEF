@@ -335,14 +335,13 @@ class Nodes(object):
         # save state file
         nodesFileName = fileName + '.simnodes'
         with open(nodesFileName, 'wb') as f:
-            dill.dump(self, f)
-            #pickle.dump(list(self), f)
+            #dill.dump(self, f)
+            pickle.dump(list(self), f, protocol=pickle.HIGHEST_PROTOCOL)
             #dill.dump(self.nodes, f)
 
         #if self.performTransformation and self.parameters is not None:
         #    paramsFileName = fileName + '.simparams.pkl'
         #    with open(paramsFileName, 'wb') as f:
-        #        # pickle.dump(list(self), f)
         #        dill.dump(self.parameters, f)
 
 
