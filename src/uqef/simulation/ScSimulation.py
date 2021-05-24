@@ -24,6 +24,10 @@ class ScSimulation(Simulation):
         self.poly_normed = poly_normed
         self.poly_rule = poly_rule
 
+        self.parameters = None
+        self.nodes = None
+        self.weights = None
+
     def getSetup(self):
         return "%s using q_order=%d and p_order=%d %s" % (type(self).__name__, self.q_order, self.p_order, "with regression" if self.regression else "")
 

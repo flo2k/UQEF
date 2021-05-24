@@ -23,6 +23,9 @@ class SaltelliSimulation(Simulation):
         self.poly_normed = poly_normed
         self.poly_rule = poly_rule
 
+        self.parameters = None
+        self.nodes = None
+
     def getSetup(self):
         return "%s running %d evaluations" % (type(self).__name__, self.numEvaluations*2)
 
@@ -39,11 +42,11 @@ class SaltelliSimulation(Simulation):
         d = simulationNodes.distNodes[0] #temp.shape[0]
         N = self.numEvaluations  # (temp.shape)[1] should be 2*N
         new_dim = N * (d + 2)
-        print("MC & Saltelli INFO: D is %d, N is %d, total number of calculations will be %d" % (d, N, new_dim))
+        print(f"MC & Saltelli INFO: D is {d}, N is {N}, total number of calculations will be {new_dim}")
         m1 = temp.T[:N].T  # m1.shape = (d,N)
         m2 = temp.T[N:].T  # m2.shape = (d,N)
-        print("MC & Saltelli INFO:m1 shape: {}".format(m1.shape))
-        print("MC & Saltelli INFO:m2 shape: {}".format(m2.shape))
+        # print(f"MC & Saltelli INFO: m1 shape: {m1.shape}")
+        # print(f"MC & Saltelli INFO: m2 shape: {m2.shape}")
 
         zeros = [0] * d
         ones = [1] * d
@@ -64,7 +67,7 @@ class SaltelliSimulation(Simulation):
                            solverTimes=self.solver.solverTimes,
                            work_package_indexes=self.solver.work_package_indexes)
         if self.regression:
-            statistics.preparePolyExpanForSaltelli(simulationNodes, self.regression, self.p_order,
+            statistics.preparePolyExpanForSaltelli(simulationNodes, self.numEvaluations, self.regression, self.p_order,
                                              self.poly_normed, self.poly_rule)
 
     def calculateStatistics(self, statistics, simulationNodes, original_runtime_estimator=None, *args, **kwargs):

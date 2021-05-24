@@ -23,6 +23,9 @@ class McSimulation(Simulation):
         self.poly_normed = poly_normed
         self.poly_rule = poly_rule
 
+        self.parameters = None
+        self.nodes = None
+
     def getSetup(self):
         return "%s running %d evaluations %s" % (type(self).__name__, self.numEvaluations, "with regression" if self.regression else "")
 
@@ -43,7 +46,7 @@ class McSimulation(Simulation):
                            solverTimes=self.solver.solverTimes,
                            work_package_indexes=self.solver.work_package_indexes)
         if self.regression:
-            statistics.preparePolyExpanForMc(simulationNodes, self.regression, self.p_order,
+            statistics.preparePolyExpanForMc(simulationNodes, self.numEvaluations, self.regression, self.p_order,
                                              self.poly_normed, self.poly_rule)
 
     def calculateStatistics(self, statistics, simulationNodes, original_runtime_estimator=None, *args, **kwargs):
