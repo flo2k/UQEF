@@ -25,6 +25,7 @@ import inspect
 
 import json
 import dill
+import pickle
 
 #####################################
 ### MPI infos:
@@ -120,8 +121,8 @@ class UQsim(object):
         self.parser.add_argument('--sc_p_order'                , type=int, default=1)  # number of terms in PCE (N)
         self.parser.add_argument('--sc_sparse_quadrature'      , action='store_true', default=False)
         self.parser.add_argument('--sc_quadrature_rule'        , default='G')
-        self.parser.add_argument('--sc_poly_normed'               , action='store_true', default=False)
-        self.parser.add_argument('--sc_poly_rule'                 , default="three_terms_recurrence") # "gram_schmidt" | "three_terms_recurrence" | "cholesky"
+        self.parser.add_argument('--sc_poly_normed'            , action='store_true', default=False)
+        self.parser.add_argument('--sc_poly_rule'              , default="three_terms_recurrence") # "gram_schmidt" | "three_terms_recurrence" | "cholesky"
         self.parser.add_argument('--sampling_rule'             , default='random')  # "sobol" | "latin_hypercube" | "halton"  | "hammersley"
         self.parser.add_argument('--transformToStandardDist'   , action='store_true', default=False)
         self.parser.add_argument('--config_file')
@@ -444,6 +445,7 @@ class UQsim(object):
             if fileName is None:
                 fileName = self.simulation.name
             self.simulationNodes.saveToFile(self.args.outputResultDir + "/" + fileName)
+
 
     def save_statistics(self, **kwargs):
         if self.is_master() and self.args.disable_statistics is False:
