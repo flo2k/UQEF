@@ -306,6 +306,8 @@ class UQsim(object):
                 , "saltelli": (lambda: uqef.simulation.SaltelliSimulation(self.solver,
                                                                           self.args.mc_numevaluations,
                                                                           self.args.sc_p_order,
+                                                                          self.args.sampling_rule,
+                                                                          self.args.regression,
                                                                           self.args.sc_poly_normed,
                                                                           self.args.sc_poly_rule))
             }

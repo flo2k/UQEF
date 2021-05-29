@@ -10,8 +10,8 @@ from tabulate import tabulate
 import matplotlib.pyplot as plotter
 import seaborn as sns
 import json
-import pickle
 import dill
+import pickle
 import psutil
 import os
 import sys
@@ -333,10 +333,10 @@ class Nodes(object):
 
     def saveToFile(self, fileName):
         # save state file
-        nodesFileName = fileName + '.simnodes'
+        nodesFileName = fileName + '.simnodes.zip'
         with open(nodesFileName, 'wb') as f:
             dill.dump(self, f)
-            # pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
+            #pickle._dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
             # cPickle.dump(self.__dict__, f, protocol=pickle.HIGHEST_PROTOCOL)
             #dill.dump(self.nodes, f)
 

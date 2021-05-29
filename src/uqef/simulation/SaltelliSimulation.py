@@ -13,7 +13,7 @@ class SaltelliSimulation(Simulation):
     SaltelliSimulation does a saltelli simulation
     """
     def __init__(self, solver, numEvaluations, p_order, rule="R", regression=False,
-                 poly_normed=False, poly_rule = "three_terms_recurrence", *args, **kwargs):
+                 poly_normed=False, poly_rule="three_terms_recurrence", *args, **kwargs):
         Simulation.__init__(self, "saltelli", solver, *args, **kwargs)
 
         self.numEvaluations = numEvaluations
@@ -39,7 +39,7 @@ class SaltelliSimulation(Simulation):
             temp = nodes
         self.nodes = nodes.T
 
-        d = simulationNodes.distNodes[0] #temp.shape[0]
+        d = simulationNodes.distNodes.shape[0] #temp.shape[0]
         N = self.numEvaluations  # (temp.shape)[1] should be 2*N
         new_dim = N * (d + 2)
         print(f"MC & Saltelli INFO: D is {d}, N is {N}, total number of calculations will be {new_dim}")
@@ -66,9 +66,8 @@ class SaltelliSimulation(Simulation):
                            timesteps=timesteps,
                            solverTimes=self.solver.solverTimes,
                            work_package_indexes=self.solver.work_package_indexes)
-        if self.regression:
-            statistics.preparePolyExpanForSaltelli(simulationNodes, self.numEvaluations, self.regression, self.p_order,
-                                             self.poly_normed, self.poly_rule)
+        statistics.preparePolyExpanForSaltelli(simulationNodes, self.numEvaluations, self.regression, self.p_order,
+                                         self.poly_normed, self.poly_rule)
 
     def calculateStatistics(self, statistics, simulationNodes, original_runtime_estimator=None, *args, **kwargs):
             model_results = self.solver.results
