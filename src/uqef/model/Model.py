@@ -21,7 +21,7 @@ class Model(object):
         pass
 
     @abstractmethod
-    def prepare(self):
+    def prepare(self, *args, **kwargs):
         raise NotImplementedError("Should have implemented this")
 
     @abstractmethod
