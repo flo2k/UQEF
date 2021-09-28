@@ -125,6 +125,7 @@ class UQsim(object):
         self.parser.add_argument('--sc_poly_rule'              , default="three_terms_recurrence") # "gram_schmidt" | "three_terms_recurrence" | "cholesky"
         self.parser.add_argument('--sampling_rule'             , default='random')  # "sobol" | "latin_hypercube" | "halton"  | "hammersley"
         self.parser.add_argument('--transformToStandardDist'   , action='store_true', default=False)
+        self.parser.add_argument('--sampleFromStandardDist'   , action='store_true', default=False)
         self.parser.add_argument('--config_file')
 
         # Solver settings
@@ -170,7 +171,7 @@ class UQsim(object):
             print("rank: {} is master!".format(rank))
 
     def setup(self):
-        if not self.is_restored() and self.args.uqsim_restore_from_file is True: # for locally configured restore
+        if not self.is_restored() and self.args.uqsim_restore_from_file is True:  # for locally configured restore
             self.restore_from_file()
             self.__restored = True
         if not self.is_restored():
@@ -232,38 +233,51 @@ class UQsim(object):
                     for p in cp_dist_signature.parameters:
                         dist_parameters_values.append(parameter_config[p])
 
-                    if self.args.transformToStandardDist:
-                        # TODO: Implement transformation in more elegant and general way, e.g., with CDF^(-1)(u) or Rosenblatt
-                        # TODO: do vector-wise transformation
-                        if parameter_config["distribution"] == "Normal":
-                            self.simulationNodes.setDist(parameter_config["name"],
-                                                     getattr(cp, parameter_config["distribution"])())
-                            # L = np.linalg.cholesky(parameter_config["sigma"])
-                            transformation_param_tuple = (parameter_config["mu"], parameter_config["sigma"])
-                            transformation_distribution = lambda x, mu, std: mu + std * x
-                        elif parameter_config["distribution"] == "Uniform":
-                            if self.args.uq_method == "sc": # sample from U[-1,1]
-                                self.simulationNodes.setDist(parameter_config["name"],
-                                                         getattr(cp, parameter_config["distribution"])(lower=-1, upper=1))
-                                _a = (parameter_config["lower"] + parameter_config["upper"]) / 2
-                                _b = (parameter_config["upper"] - parameter_config["lower"]) / 2
-                            else: # sample from U[0,1]
-                                self.simulationNodes.setDist(parameter_config["name"],
-                                                         getattr(cp, parameter_config["distribution"])(lower=0, upper=1))
-                                _a = parameter_config["lower"]
-                                _b = (parameter_config["upper"] - parameter_config["lower"])
-                            transformation_param_tuple = (_a, _b)
-                            transformation_distribution = lambda x, mu, std: mu + std * x
-                        else:
-                            transformation_param_tuple = (parameter_config["default_mu"], parameter_config["default_sigma"])
-                            transformation_distribution = lambda x, mu, std: mu + std * x
+                    self.simulationNodes.setDist(parameter_config["name"],
+                                                 getattr(cp, parameter_config["distribution"])(
+                                                     *dist_parameters_values))
 
-                        self.simulationNodes.setTransformation(parameter_config["name"], transformation_param_tuple, transformation_distribution)
+                    if self.args.sampleFromStandardDist or self.args.transformToStandardDist:
+                        self.simulationNodes.setTransformationParameters()
+                        self.simulationNodes.setStandardDist(parameter_config["name"],
+                                                             getattr(cp, parameter_config["distribution"])())
 
-                    else:
-                        self.simulationNodes.setDist(parameter_config["name"],
-                                                     getattr(cp, parameter_config["distribution"])(
-                                                         *dist_parameters_values))
+                    # if self.args.transformToStandardDist:
+                    #     if parameter_config["distribution"] == "Normal":
+                    #         self.simulationNodes.setDist(parameter_config["name"],
+                    #                                  getattr(cp, parameter_config["distribution"])())
+                    #         # L = np.linalg.cholesky(parameter_config["sigma"])
+                    #         transformation_param_tuple = (parameter_config["mu"], parameter_config["sigma"])
+                    #         transformation_distribution = lambda x, mu, std: mu + std * x
+                    #     elif parameter_config["distribution"] == "Uniform":
+                    #         if self.args.uq_method == "sc":  # sample from U[-1,1]
+                    #             self.simulationNodes.setDist(
+                    #                 parameter_config["name"],
+                    #                 getattr(cp, parameter_config["distribution"])(lower=-1, upper=1)
+                    #             )
+                    #             _a = (parameter_config["lower"] + parameter_config["upper"]) / 2
+                    #             _b = (parameter_config["upper"] - parameter_config["lower"]) / 2
+                    #         else: # sample from U[0,1]
+                    #             self.simulationNodes.setDist(
+                    #                 parameter_config["name"],
+                    #                 getattr(cp, parameter_config["distribution"])(lower=0, upper=1)
+                    #             )
+                    #             _a = parameter_config["lower"]
+                    #             _b = (parameter_config["upper"] - parameter_config["lower"])
+                    #         transformation_param_tuple = (_a, _b)
+                    #         transformation_distribution = lambda x, mu, std: mu + std * x
+                    #     else:
+                    #         transformation_param_tuple = (parameter_config["default_mu"],
+                    #                                       parameter_config["default_sigma"])
+                    #         transformation_distribution = lambda x, mu, std: mu + std * x
+                    #
+                    #     self.simulationNodes.setTransformationParameters(parameter_config["name"],
+                    #                                            transformation_param_tuple, transformation_distribution)
+                    #
+                    # else:
+                    #     self.simulationNodes.setDist(parameter_config["name"],
+                    #                                  getattr(cp, parameter_config["distribution"])(
+                    #                                      *dist_parameters_values))
 
     def setup_model(self):
         model_generator.model = self.models[self.args.model]

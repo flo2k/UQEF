@@ -33,6 +33,15 @@ class Nodes(object):
             return dill.load(f)
 
     def __init__(self, nodeNames):
+        """
+
+        :param nodeNames: list of nodes names
+        Important note:
+        * nodes is a list of samples from standard distributions, used for e.g., generating polynomials
+        * parameters on the other hand list of samples from a user specified distributions,
+                     used for stimulating/forcing the model
+
+        """
         self.nodeNames = nodeNames
         self.values = {}
         self.dists = {}
@@ -42,10 +51,13 @@ class Nodes(object):
         self.nodes = []
         self.numSamplesOrScDim = None
 
-        self.performTransformation = False
+        self.standardDists = {}
+        self.joinedStandardDists = []
+        self._performTransformation = False
+        self.parameters = None
+
         self.transformationParameters = {}
         self.transformationFunctions = {}
-        self.parameters = None
 
     def setValue(self, nodeName, value):
         self.assertNodeName(nodeName)
@@ -57,10 +69,18 @@ class Nodes(object):
 
         self.dists[nodeName] = dist
 
-    def setTransformation(self, nodeName, parametersTuple, transformationFunc):
+    def setStandardDist(self, nodeName, dist):
         self.assertNodeName(nodeName)
 
-        self.performTransformation = True #TODO no point of having this here...
+        self.standardDists[nodeName] = dist
+
+    def setTransformation(self):
+        self._performTransformation = True
+
+    def setTransformationParameters(self, nodeName, parametersTuple, transformationFunc):
+        self.assertNodeName(nodeName)
+
+        self._performTransformation = True
         self.transformationParameters[nodeName] = parametersTuple
         self.transformationFunctions[nodeName] = transformationFunc
 
@@ -88,18 +108,26 @@ class Nodes(object):
         #order the distributes to get a defined order
         orderdDists = []
         orderdDistsNames = []
+        orderdStandardDistsNames = []
         for i in range(0, len(self.nodeNames)):
             nameOfNode = self.nodeNames[i]
             if nameOfNode in self.dists:
                 orderdDists.append(self.dists[nameOfNode])
                 orderdDistsNames.append(nameOfNode)
+                if self._performTransformation:
+                    orderdStandardDistsNames.append(self.standardDists[nameOfNode])
 
         if len(self.dists) > 0:
             self.joinedDists = cp.J(*orderdDists)
-            #distNodes = self.joinedDists.sample(numSamples, rule=rule).round(4)
-            #distNodes = cp.generate_samples(order=numSamples, domain=self.joinedDists, rule=rule).round(4)
-            distNodes = self.joinedDists.sample(size=numSamples, rule=rule).round(4)
-            self.distNodes = distNodes
+            if self._performTransformation:
+                self.joinedStandardDists = cp.J(*orderdStandardDistsNames)
+                distNodes = self.joinedStandardDists.sample(size=numSamples, rule=rule).round(4)
+                self.distNodes = distNodes
+            else:
+                #distNodes = self.joinedDists.sample(numSamples, rule=rule).round(4)
+                #distNodes = cp.generate_samples(order=numSamples, domain=self.joinedDists, rule=rule).round(4)
+                distNodes = self.joinedDists.sample(size=numSamples, rule=rule).round(4)
+                self.distNodes = distNodes
 
         nodes = []
 
@@ -118,8 +146,11 @@ class Nodes(object):
         self.nodes = np.array(nodes)
         self.weights = np.array(self.weights) #MC has no weights, but after generation, we want a array
 
-        if self.performTransformation:
-            self.parameters = self.transformParameters(orderdDistsNames, nodes)
+        if self._performTransformation:
+            # self.parameters = self.transformParameters(orderdDistsNames, self.nodes)
+            self.parameters = Nodes.transformSamples(self.nodes, self.joinedStandardDists, self.joinedDists)
+        else:
+            self.parameters = self.nodes
 
         return self.nodes, self.parameters
 
@@ -132,24 +163,37 @@ class Nodes(object):
 
         orderdDists = []
         orderdDistsNames = []
-        self.joinedDists=[]
-        self.distNodes=[]
-        self.weights=[]
+        orderdStandardDistsNames = []
+        # self.joinedDists = []
+        # self.distNodes = []
+        # self.weights = []
         for i in range(0, len(self.nodeNames)):
             nameOfNode = self.nodeNames[i]
             if nameOfNode in self.dists:
                 orderdDists.append(self.dists[nameOfNode])
                 orderdDistsNames.append(nameOfNode)
+                if self._performTransformation:
+                    orderdStandardDistsNames.append(self.standardDists[nameOfNode])
 
         if len(self.dists) > 0:
             self.joinedDists = cp.J(*orderdDists)
             self.__save__cpu_affinity()
             growth = True if (rule == "c" and sparse == False) else False  # according to: https://github.com/jonathf/chaospy/issues/139
-            self.distNodes, self.weights = cp.generate_quadrature(numCollocationPointsPerDim,
-                                                                  self.joinedDists,
-                                                                  rule=rule,
-                                                                  growth=growth,
-                                                                  sparse=sparse)
+
+
+            if self._performTransformation:
+                self.joinedStandardDists = cp.J(*orderdStandardDistsNames)
+                self.distNodes, self.weights = cp.generate_quadrature(numCollocationPointsPerDim,
+                                                                      self.joinedStandardDists,
+                                                                      rule=rule,
+                                                                      growth=growth,
+                                                                      sparse=sparse)
+            else:
+                self.distNodes, self.weights = cp.generate_quadrature(numCollocationPointsPerDim,
+                                                                      self.joinedDists,
+                                                                      rule=rule,
+                                                                      growth=growth,
+                                                                      sparse=sparse)
             self.__restore__cpu_affinity()
 
         nodes = []
@@ -170,8 +214,11 @@ class Nodes(object):
         self.nodes = np.array(nodes)
         self.weights = np.array(self.weights)
 
-        if self.performTransformation:
-            self.parameters = self.transformParameters(orderdDistsNames, nodes)
+        if self._performTransformation:
+            # self.parameters = self.transformParameters(orderdDistsNames, self.nodes)
+            self.parameters = Nodes.transformSamples(self.nodes, self.joinedStandardDists, self.joinedDists)
+        else:
+            self.parameters = self.nodes
 
         return self.nodes, self.weights, self.parameters
 
@@ -185,6 +232,17 @@ class Nodes(object):
                                                              self.transformationParameters[nameOfNode][0], \
                                                              self.transformationParameters[nameOfNode][1])
         return np.array(transformedNodes)
+
+    @staticmethod
+    def transformSamples(samples, distribution_r, distribution_q):
+        """
+
+        :param samples: array of samples from distribution_r
+        :param distribution_r: 'standard' distribution
+        :param distribution_q: 'user-defined' distribution
+        :return: array of samples from distribution_q
+        """
+        return distribution_q.inv(distribution_r.fwd(samples))
 
     def __save__cpu_affinity(self):
         # Save cpu pinning: This is necessary, because through chaospy.generate_quadrature() -> scipy.linalg.eig_banded
@@ -335,12 +393,13 @@ class Nodes(object):
         # save state file
         nodesFileName = fileName + '.simnodes.zip'
         with open(nodesFileName, 'wb') as f:
-            dill.dump(self, f)
+            #dill.dump(self, f)
+            pickle.dump(self, f, protocol=pickle.DEFAULT_PROTOCOL)
             #pickle._dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
             # cPickle.dump(self.__dict__, f, protocol=pickle.HIGHEST_PROTOCOL)
             #dill.dump(self.nodes, f)
 
-        #if self.performTransformation and self.parameters is not None:
+        #if self._performTransformation and self.parameters is not None:
         #    paramsFileName = fileName + '.simparams.pkl'
         #    with open(paramsFileName, 'wb') as f:
         #        dill.dump(self.parameters, f)
