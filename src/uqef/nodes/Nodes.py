@@ -144,7 +144,7 @@ class Nodes(object):
                     nodes.append(distNodes[orderdDistsNames.index(nameOfNode)])
 
         self.nodes = np.array(nodes)
-        self.weights = np.array(self.weights) #MC has no weights, but after generation, we want a array
+        self.weights = np.array(self.weights)  # MC has no weights, but after generation, we want a array
 
         if self._performTransformation:
             # self.parameters = self.transformParameters(orderdDistsNames, self.nodes)
@@ -178,7 +178,7 @@ class Nodes(object):
         if len(self.dists) > 0:
             self.joinedDists = cp.J(*orderdDists)
             self.__save__cpu_affinity()
-            growth = True if (rule == "c" and sparse == False) else False  # according to: https://github.com/jonathf/chaospy/issues/139
+            growth = True if (rule == "c" and not sparse) else False  # according to: https://github.com/jonathf/chaospy/issues/139
 
 
             if self._performTransformation:
@@ -198,9 +198,9 @@ class Nodes(object):
 
         nodes = []
         if len(self.distNodes) == 0:
-            numNodes=numCollocationPointsPerDim
+            numNodes = numCollocationPointsPerDim
         else:
-            numNodes=len(self.distNodes[0])
+            numNodes = len(self.distNodes[0])
 
         for i in range(0, len(self.nodeNames)):
             nameOfNode = self.nodeNames[i]
@@ -221,6 +221,9 @@ class Nodes(object):
             self.parameters = self.nodes
 
         return self.nodes, self.weights, self.parameters
+
+    def get_nodes_and_parameters(self):
+        return self.nodes, self.parameters
 
     def transformParameters(self, orderdDistsNames, nodes):
         transformedNodes = np.array(nodes, copy=True)

@@ -324,6 +324,7 @@ class UQsim(object):
                                                                           self.args.regression,
                                                                           self.args.sc_poly_normed,
                                                                           self.args.sc_poly_rule))
+                , "ensemble": (lambda: uqef.simulation.EnsembleSimulation(self.solver))
             }
             self.simulation = simulations[self.args.uq_method]()
 

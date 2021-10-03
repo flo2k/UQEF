@@ -65,6 +65,10 @@ class Statistics(object):
                             work_package_indexes, original_runtime_estimator=None, *args, **kwargs):
         pass
 
+    def calcStatisticsForEnsemble(self, rawSamples, timesteps, simulationNodes, numEvaluations, solverTimes,
+                                  work_package_indexes, original_runtime_estimator, *args, **kwargs):
+        pass
+
     def printResults(self, timestep=-1, **kwargs):
         pass
 
