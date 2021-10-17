@@ -5,6 +5,7 @@ Created on 10.05.2015
 """
 
 import chaospy as cp
+import itertools
 import numpy as np
 from tabulate import tabulate
 import matplotlib.pyplot as plotter
@@ -221,6 +222,20 @@ class Nodes(object):
             self.parameters = self.nodes
 
         return self.nodes, self.weights, self.parameters
+
+    def generateNodesFromListOfValues(self, fileName=None):
+        nodes = []
+        if fileName is not None and fileName:
+            # reading a matrix of values from a parameters file
+            raise NotImplementedError("Should have implemented this")
+        else:
+            # creating a matrix of values from default values in a config file
+            for i in range(0, len(self.nodeNames)):
+                nameOfNode = self.nodeNames[i]
+                if nameOfNode in self.values:
+                    nodes.append(self.values[nameOfNode])  # assumption self.values[nameOfNode] is a list
+            # transpose for consistency, Nodes.nodes should be of size (stoch_dim x number_of_nodes)
+            self.parameters = self.nodes = np.array(list(itertools.product(*nodes))).T
 
     def get_nodes_and_parameters(self):
         return self.nodes, self.parameters

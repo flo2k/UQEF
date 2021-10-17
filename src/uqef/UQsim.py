@@ -114,7 +114,7 @@ class UQsim(object):
 
         # UQ method and uncertain parameter settings
         self.parser.add_argument('--uncertain'                 , default='all')
-        self.parser.add_argument('--uq_method'                 , default="sc")  # sc, mc, saltelli
+        self.parser.add_argument('--uq_method'                 , default="sc")  # sc, mc, saltelli, ensemble
         self.parser.add_argument('--regression'                , action='store_true', default=False)
         self.parser.add_argument('--mc_numevaluations'         , type=int, default=27)
         self.parser.add_argument('--sc_q_order'                , type=int, default=2)  # number of collocation points in each direction (Q)
@@ -127,6 +127,7 @@ class UQsim(object):
         self.parser.add_argument('--transformToStandardDist'   , action='store_true', default=False)
         self.parser.add_argument('--sampleFromStandardDist'   , action='store_true', default=False)
         self.parser.add_argument('--config_file')
+        self.parser.add_argument('--parameters_file')
 
         # Solver settings
         self.parser.add_argument('--parallel'                  , action='store_true', default=False)
@@ -176,7 +177,7 @@ class UQsim(object):
             self.__restored = True
         if not self.is_restored():
             self.setup_configuration_object()
-            self.setup_nodes_via_config_file()
+            self.setup_nodes_via_config_file_or_parameters_file()
             self.setup_path()
             self.setup_model()
             self.setup_parallelisation()
@@ -213,7 +214,7 @@ class UQsim(object):
     def setup_nodes(self, node_names):
         self.simulationNodes = uqef.nodes.Nodes(node_names)
 
-    def setup_nodes_via_config_file(self):
+    def setup_nodes_via_config_file_or_parameters_file(self):
         if self.is_master() and self.configuration_object is not None:
             print("Config nodes via config file: {}".format(self.args.config_file))
 
@@ -223,61 +224,45 @@ class UQsim(object):
                 node_names.append(parameter_config["name"])
             self.setup_nodes(node_names)
 
-            # node values and distributions -> automatically maps dists and their parameters by reflection mechanisms
-            for parameter_config in self.configuration_object["parameters"]:
-                if parameter_config["distribution"] == "None":
-                    self.simulationNodes.setValue(parameter_config["name"], parameter_config["default"])
-                else:
-                    cp_dist_signature = inspect.signature(getattr(cp, parameter_config["distribution"]))
-                    dist_parameters_values = []
-                    for p in cp_dist_signature.parameters:
-                        dist_parameters_values.append(parameter_config[p])
+            if self.args.uq_method == "ensemble" and self.args.parameters_file:
+                # reading values of the nodes form a file
+                print("Reading nodes values from parameters file {}".format(self.args.parameters_file))
+                self.simulationNodes.generateNodesFromListOfValues(fileName=self.args.parameters_file)
+            else:
+                # branch for all other uq_methods ('sc', 'mc', 'saltelli')
+                # and 'ensemble' when parameters_file is not specified
+                for parameter_config in self.configuration_object["parameters"]:
+                    if parameter_config["distribution"] == "None":
+                        # take default value(s) from config file
+                        if self.args.uq_method == "ensemble" and "values_list" in parameter_config:
+                            self.simulationNodes.setValue(parameter_config["name"], parameter_config["values_list"])
+                        elif 'default' in parameter_config:
+                            self.simulationNodes.setValue(parameter_config["name"], parameter_config["default"])
+                        else:
+                            raise Exception(f"Error in UQSim.setup_nodes_via_config_file_or_parameters_file() : "
+                                            f" distribution of a parameter is None, "
+                                            f"but values_list or default entries are missing")
+                    else:
+                        # node values and distributions -> automatically maps dists and their parameters by reflection mechanisms
+                        cp_dist_signature = inspect.signature(getattr(cp, parameter_config["distribution"]))
+                        dist_parameters_values = []
+                        for p in cp_dist_signature.parameters:
+                            dist_parameters_values.append(parameter_config[p])
 
-                    self.simulationNodes.setDist(parameter_config["name"],
-                                                 getattr(cp, parameter_config["distribution"])(
-                                                     *dist_parameters_values))
+                        self.simulationNodes.setDist(parameter_config["name"],
+                                                     getattr(cp, parameter_config["distribution"])(
+                                                         *dist_parameters_values))
 
-                    if self.args.sampleFromStandardDist or self.args.transformToStandardDist:
-                        self.simulationNodes.setTransformationParameters()
-                        self.simulationNodes.setStandardDist(parameter_config["name"],
-                                                             getattr(cp, parameter_config["distribution"])())
+                        # for numerical stability work with nodes from 'standard' distributions,
+                        # and use parameters for forcing the model
+                        if self.args.sampleFromStandardDist or self.args.transformToStandardDist:
+                            self.simulationNodes.setTransformationParameters()
+                            self.simulationNodes.setStandardDist(parameter_config["name"],
+                                                                 getattr(cp, parameter_config["distribution"])())
 
-                    # if self.args.transformToStandardDist:
-                    #     if parameter_config["distribution"] == "Normal":
-                    #         self.simulationNodes.setDist(parameter_config["name"],
-                    #                                  getattr(cp, parameter_config["distribution"])())
-                    #         # L = np.linalg.cholesky(parameter_config["sigma"])
-                    #         transformation_param_tuple = (parameter_config["mu"], parameter_config["sigma"])
-                    #         transformation_distribution = lambda x, mu, std: mu + std * x
-                    #     elif parameter_config["distribution"] == "Uniform":
-                    #         if self.args.uq_method == "sc":  # sample from U[-1,1]
-                    #             self.simulationNodes.setDist(
-                    #                 parameter_config["name"],
-                    #                 getattr(cp, parameter_config["distribution"])(lower=-1, upper=1)
-                    #             )
-                    #             _a = (parameter_config["lower"] + parameter_config["upper"]) / 2
-                    #             _b = (parameter_config["upper"] - parameter_config["lower"]) / 2
-                    #         else: # sample from U[0,1]
-                    #             self.simulationNodes.setDist(
-                    #                 parameter_config["name"],
-                    #                 getattr(cp, parameter_config["distribution"])(lower=0, upper=1)
-                    #             )
-                    #             _a = parameter_config["lower"]
-                    #             _b = (parameter_config["upper"] - parameter_config["lower"])
-                    #         transformation_param_tuple = (_a, _b)
-                    #         transformation_distribution = lambda x, mu, std: mu + std * x
-                    #     else:
-                    #         transformation_param_tuple = (parameter_config["default_mu"],
-                    #                                       parameter_config["default_sigma"])
-                    #         transformation_distribution = lambda x, mu, std: mu + std * x
-                    #
-                    #     self.simulationNodes.setTransformationParameters(parameter_config["name"],
-                    #                                            transformation_param_tuple, transformation_distribution)
-                    #
-                    # else:
-                    #     self.simulationNodes.setDist(parameter_config["name"],
-                    #                                  getattr(cp, parameter_config["distribution"])(
-                    #                                      *dist_parameters_values))
+                if self.args.uq_method == "ensemble":
+                    # in case of an ensemble method take a cross product of values_list of all parameters
+                    self.simulationNodes.generateNodesFromListOfValues()
 
     def setup_model(self):
         model_generator.model = self.models[self.args.model]
@@ -411,6 +396,7 @@ class UQsim(object):
                                                                                      regression=self.args.regression))
                     ,"saltelli": (lambda: self.statistic.calcStatisticsForSaltelliParallel(chunksize=self.args.chunksize,
                                                                                            regression=self.args.regression))
+                    ,"ensemble": (lambda: self.statistic.calcStatisticsForEnsembleParallel(chunksize=self.args.chunksize))
                 }
                 calculateStatistics[self.args.uq_method]()
             elif self.is_master():
