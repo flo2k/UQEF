@@ -24,15 +24,9 @@ class EnsembleSimulation(Simulation):
 
     def generateSimulationNodes(self, simulationNodes):
         nodes, parameters = simulationNodes.get_nodes_and_parameters()
-        nodes = nodes.T
-
-        self.numEvaluations = len(nodes)
-
-        if parameters is not None:
-            self.parameters = parameters.T
-        else:
-            self.parameters = nodes
-        self.nodes = nodes
+        self.numEvaluations = len(nodes.T)
+        self.parameters = parameters.T
+        self.nodes = nodes.T
 
     def prepareStatistic(self, statistics, simulationNodes, original_runtime_estimator=None, *args, **kwargs):
         timesteps = self.solver.timesteps()
@@ -47,13 +41,15 @@ class EnsembleSimulation(Simulation):
         solverTimes = self.solver.solverTimes
         self.original_runtime_estimator = original_runtime_estimator
 
-        statistics.calcStatisticsForEnsemble(rawSamples=model_results,
-                                       timesteps=timesteps,
-                                       simulationNodes=simulationNodes,
-                                       numEvaluations=self.numEvaluations,
-                                       solverTimes=solverTimes,
-                                       work_package_indexes=self.solver.work_package_indexes,
-                                       original_runtime_estimator=self.original_runtime_estimator,
-                                       *args, **kwargs)
+        statistics.calcStatisticsForEnsemble(
+            rawSamples=model_results,
+            timesteps=timesteps,
+            simulationNodes=simulationNodes,
+            numEvaluations=self.numEvaluations,
+            solverTimes=solverTimes,
+            work_package_indexes=self.solver.work_package_indexes,
+            original_runtime_estimator=self.original_runtime_estimator,
+            *args, **kwargs
+        )
 
         return statistics

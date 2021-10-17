@@ -50,6 +50,10 @@ class Statistics(object):
     def calcStatisticsForSaltelliParallel(self, chunksize=1, *args, **kwargs):
         pass
 
+    def calcStatisticsForEnsembleParallel(self, chunksize=1, *args, **kwargs):
+        # self.calcStatisticsForMcParallel(chunksize=chunksize, regression=False, *args, **kwargs)
+        pass
+
     def calcStatisticsForMc(self, rawSamples, timesteps,
                             simulationNodes, numEvaluations, order, regression, poly_normed, poly_rule, solverTimes,
                             work_package_indexes, original_runtime_estimator=None, *args, **kwargs):
@@ -66,7 +70,13 @@ class Statistics(object):
         pass
 
     def calcStatisticsForEnsemble(self, rawSamples, timesteps, simulationNodes, numEvaluations, solverTimes,
-                                  work_package_indexes, original_runtime_estimator, *args, **kwargs):
+                                  work_package_indexes, original_runtime_estimator=None, *args, **kwargs):
+        # self.calcStatisticsForMc(
+        #     rawSamples=rawSamples, timesteps=timesteps, simulationNodes=simulationNodes, numEvaluations=numEvaluations,
+        #     order=None, regression=False, poly_normed=None, poly_rule=None, solverTimes=solverTimes,
+        #     work_package_indexes=work_package_indexes, original_runtime_estimator=original_runtime_estimator,
+        #     *args, **kwargs
+        # )
         pass
 
     def printResults(self, timestep=-1, **kwargs):
