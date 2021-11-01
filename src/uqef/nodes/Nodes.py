@@ -233,7 +233,10 @@ class Nodes(object):
             for i in range(0, len(self.nodeNames)):
                 nameOfNode = self.nodeNames[i]
                 if nameOfNode in self.values:
-                    nodes.append(self.values[nameOfNode])  # assumption self.values[nameOfNode] is a list
+                    values = self.values[nameOfNode]
+                    if not isinstance(values, list):
+                        values = [values, ]
+                    nodes.append(values)  # assumption self.values[nameOfNode] is a list
             # transpose for consistency, Nodes.nodes should be of size (stoch_dim x number_of_nodes)
             self.parameters = self.nodes = np.array(list(itertools.product(*nodes))).T
 
