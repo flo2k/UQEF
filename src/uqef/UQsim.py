@@ -231,6 +231,9 @@ class UQsim(object):
             else:
                 # branch for all other uq_methods ('sc', 'mc', 'saltelli')
                 # and 'ensemble' when parameters_file is not specified
+                if self.args.sampleFromStandardDist or self.args.transformToStandardDist:
+                    self.simulationNodes.setTransformation()
+
                 for parameter_config in self.configuration_object["parameters"]:
                     if parameter_config["distribution"] == "None":
                         # take default value(s) from config file
@@ -256,7 +259,6 @@ class UQsim(object):
                         # for numerical stability work with nodes from 'standard' distributions,
                         # and use parameters for forcing the model
                         if self.args.sampleFromStandardDist or self.args.transformToStandardDist:
-                            self.simulationNodes.setTransformationParameters()
                             self.simulationNodes.setStandardDist(parameter_config["name"],
                                                                  getattr(cp, parameter_config["distribution"])())
 
@@ -321,9 +323,9 @@ class UQsim(object):
             print("")
             print("Nodes setup:")
             print(self.simulationNodes.printNodesSetup())
-            print("")
-            print("Nodes:")
-            print(self.simulationNodes.printNodes())
+            # print("")
+            # print("Nodes:")
+            # print(self.simulationNodes.printNodes())
 
     def setup_runtime_estimator(self):
         if self.is_master():

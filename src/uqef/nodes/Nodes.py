@@ -79,9 +79,6 @@ class Nodes(object):
         self._performTransformation = True
 
     def setTransformationParameters(self, nodeName, parametersTuple, transformationFunc):
-        self.assertNodeName(nodeName)
-
-        self._performTransformation = True
         self.transformationParameters[nodeName] = parametersTuple
         self.transformationFunctions[nodeName] = transformationFunc
 
@@ -109,19 +106,19 @@ class Nodes(object):
         #order the distributes to get a defined order
         orderdDists = []
         orderdDistsNames = []
-        orderdStandardDistsNames = []
+        orderdStandardDists = []
         for i in range(0, len(self.nodeNames)):
             nameOfNode = self.nodeNames[i]
             if nameOfNode in self.dists:
                 orderdDists.append(self.dists[nameOfNode])
                 orderdDistsNames.append(nameOfNode)
                 if self._performTransformation:
-                    orderdStandardDistsNames.append(self.standardDists[nameOfNode])
+                    orderdStandardDists.append(self.standardDists[nameOfNode])
 
         if len(self.dists) > 0:
             self.joinedDists = cp.J(*orderdDists)
             if self._performTransformation:
-                self.joinedStandardDists = cp.J(*orderdStandardDistsNames)
+                self.joinedStandardDists = cp.J(*orderdStandardDists)
                 distNodes = self.joinedStandardDists.sample(size=numSamples, rule=rule).round(4)
                 self.distNodes = distNodes
             else:
@@ -164,7 +161,7 @@ class Nodes(object):
 
         orderdDists = []
         orderdDistsNames = []
-        orderdStandardDistsNames = []
+        orderdStandardDists = []
         # self.joinedDists = []
         # self.distNodes = []
         # self.weights = []
@@ -174,16 +171,15 @@ class Nodes(object):
                 orderdDists.append(self.dists[nameOfNode])
                 orderdDistsNames.append(nameOfNode)
                 if self._performTransformation:
-                    orderdStandardDistsNames.append(self.standardDists[nameOfNode])
+                    orderdStandardDists.append(self.standardDists[nameOfNode])
 
         if len(self.dists) > 0:
             self.joinedDists = cp.J(*orderdDists)
             self.__save__cpu_affinity()
             growth = True if (rule == "c" and not sparse) else False  # according to: https://github.com/jonathf/chaospy/issues/139
 
-
             if self._performTransformation:
-                self.joinedStandardDists = cp.J(*orderdStandardDistsNames)
+                self.joinedStandardDists = cp.J(*orderdStandardDists)
                 self.distNodes, self.weights = cp.generate_quadrature(numCollocationPointsPerDim,
                                                                       self.joinedStandardDists,
                                                                       rule=rule,
