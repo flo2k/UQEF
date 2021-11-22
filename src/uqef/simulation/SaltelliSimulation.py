@@ -39,14 +39,12 @@ class SaltelliSimulation(Simulation):
             temp = nodes
         self.nodes = nodes.T
 
-        d = simulationNodes.distNodes.shape[0] #temp.shape[0]
+        d = simulationNodes.distNodes.shape[0]  # temp.shape[0]
         N = self.numEvaluations  # (temp.shape)[1] should be 2*N
         new_dim = N * (d + 2)
         print(f"MC & Saltelli INFO: D is {d}, N is {N}, total number of calculations will be {new_dim}")
         m1 = temp.T[:N].T  # m1.shape = (d,N)
         m2 = temp.T[N:].T  # m2.shape = (d,N)
-        # print(f"MC & Saltelli INFO: m1 shape: {m1.shape}")
-        # print(f"MC & Saltelli INFO: m2 shape: {m2.shape}")
 
         zeros = [0] * d
         ones = [1] * d
@@ -54,11 +52,7 @@ class SaltelliSimulation(Simulation):
         matrix_B = self._get_matrix(matrix_A=m1, matrix_B=m2, indices=ones)
         matrix_A_B = np.concatenate([self._get_matrix(matrix_A=m1, matrix_B=m2, indices=index) for index in np.eye(d, dtype=bool)], axis=1)
         self.parameters = np.concatenate([matrix_A, matrix_B, matrix_A_B], axis=1)
-
-        #simulationNodes.parameters = self.parameters # TODO
-        self.parameters = self.parameters.T  # should be in Saltelli's case N*(d+2) x d
-        print("MC & Saltelli INFO: simulation.parameters shape ")
-        print(self.parameters.shape)
+        self.parameters = self.parameters.T  # should be in Saltelli case N*(d+2) x d
 
     def prepareStatistic(self, statistics, simulationNodes, original_runtime_estimator=None, *args, **kwargs):
         timesteps = self.solver.timesteps()
@@ -71,7 +65,7 @@ class SaltelliSimulation(Simulation):
 
     def calculateStatistics(self, statistics, simulationNodes, original_runtime_estimator=None, *args, **kwargs):
             model_results = self.solver.results
-            timesteps = self.solver.timesteps
+            timesteps = self.solver.timesteps()
             solverTimes = self.solver.solverTimes
             self.original_runtime_estimator = original_runtime_estimator
 
