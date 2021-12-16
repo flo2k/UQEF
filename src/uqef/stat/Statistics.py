@@ -6,6 +6,7 @@ Abstract base class for statistics calculation
 
 import os
 import dill
+import pickle
 import numpy as np
 import sys
 
@@ -118,7 +119,8 @@ class Statistics(object):
         #save state file
         statFileName = fileName + '.stat'
         with open(statFileName, 'wb') as f:
-            dill.dump(self, f)
+            # dill.dump(self, f)
+            pickle.dump(self, f, protocol=pickle.DEFAULT_PROTOCOL)
 
     def saveAsNetCdf(self, timesteps,
                      fileName="", fileNameIdent="", directory="./",
