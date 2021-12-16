@@ -96,7 +96,7 @@ class Nodes(object):
         distNodeNames = [nodeName for nodeName in self.nodeNames if nodeName in self.dists]
         return distNodeNames
 
-    def generateNodesForMC(self, numSamples, rule="R"):
+    def generateNodesForMC(self, numSamples, rule="R", read_nodes_from_file=False, fileName=None):
         if self.numSamplesOrScDim == numSamples:
             return self.nodes
 
@@ -119,13 +119,18 @@ class Nodes(object):
             self.joinedDists = cp.J(*orderdDists)
             if self._performTransformation:
                 self.joinedStandardDists = cp.J(*orderdStandardDists)
-                distNodes = self.joinedStandardDists.sample(size=numSamples, rule=rule).round(4)
-                self.distNodes = distNodes
+
+            if read_nodes_from_file:
+                nodes_and_weights_array = np.loadtxt(fileName, delimiter=',')
+                self.distNodes = nodes_and_weights_array[:, :3].T
+                self.numSamplesOrScDim = len(self.distNodes[0])
             else:
-                #distNodes = self.joinedDists.sample(numSamples, rule=rule).round(4)
-                #distNodes = cp.generate_samples(order=numSamples, domain=self.joinedDists, rule=rule).round(4)
-                distNodes = self.joinedDists.sample(size=numSamples, rule=rule).round(4)
-                self.distNodes = distNodes
+                if self._performTransformation:
+                    self.distNodes = self.joinedStandardDists.sample(size=numSamples, rule=rule).round(4)
+                else:
+                    #self.distNodes = self.joinedDists.sample(numSamples, rule=rule).round(4)
+                    #self.distNodes = cp.generate_samples(order=numSamples, domain=self.joinedDists, rule=rule).round(4)
+                    self.distNodes = self.joinedDists.sample(size=numSamples, rule=rule).round(4)
 
         nodes = []
 
@@ -137,9 +142,9 @@ class Nodes(object):
 
             if nameOfNode in self.dists:
                 if len(self.dists) == 1:
-                    nodes.append(distNodes)
+                    nodes.append(self.distNodes)
                 else:
-                    nodes.append(distNodes[orderdDistsNames.index(nameOfNode)])
+                    nodes.append(self.distNodes[orderdDistsNames.index(nameOfNode)])
 
         self.nodes = np.array(nodes)
         self.weights = np.array(self.weights)  # MC has no weights, but after generation, we want a array
@@ -152,7 +157,8 @@ class Nodes(object):
 
         return self.nodes, self.parameters
 
-    def generateNodesForSC(self, numCollocationPointsPerDim, rule="G", sparse=False):
+    def generateNodesForSC(self, numCollocationPointsPerDim, rule="G", sparse=False, read_nodes_from_file=False,
+                           fileName=None):
 
         if self.numSamplesOrScDim == numCollocationPointsPerDim:
             return self.nodes, self.weights
@@ -180,17 +186,25 @@ class Nodes(object):
 
             if self._performTransformation:
                 self.joinedStandardDists = cp.J(*orderdStandardDists)
-                self.distNodes, self.weights = cp.generate_quadrature(numCollocationPointsPerDim,
-                                                                      self.joinedStandardDists,
-                                                                      rule=rule,
-                                                                      growth=growth,
-                                                                      sparse=sparse)
+
+            if read_nodes_from_file:
+                nodes_and_weights_array = np.loadtxt(fileName, delimiter=',')
+                self.distNodes = nodes_and_weights_array[:, :3].T
+                self.weights = nodes_and_weights_array[:, 3]
             else:
-                self.distNodes, self.weights = cp.generate_quadrature(numCollocationPointsPerDim,
-                                                                      self.joinedDists,
-                                                                      rule=rule,
-                                                                      growth=growth,
-                                                                      sparse=sparse)
+                if self._performTransformation:
+                    self.distNodes, self.weights = cp.generate_quadrature(numCollocationPointsPerDim,
+                                                                          self.joinedStandardDists,
+                                                                          rule=rule,
+                                                                          growth=growth,
+                                                                          sparse=sparse)
+                else:
+                    self.distNodes, self.weights = cp.generate_quadrature(numCollocationPointsPerDim,
+                                                                          self.joinedDists,
+                                                                          rule=rule,
+                                                                          growth=growth,
+                                                                          sparse=sparse)
+
             self.__restore__cpu_affinity()
 
         nodes = []
