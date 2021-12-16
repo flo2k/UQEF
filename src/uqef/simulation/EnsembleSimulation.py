@@ -22,7 +22,7 @@ class EnsembleSimulation(Simulation):
     def getSetup(self):
         return "%s running" % (type(self).__name__)
 
-    def generateSimulationNodes(self, simulationNodes):
+    def generateSimulationNodes(self, simulationNodes, read_nodes_from_file=False, fileName=None):
         nodes, parameters = simulationNodes.get_nodes_and_parameters()
         self.numEvaluations = len(nodes.T)
         self.parameters = parameters.T

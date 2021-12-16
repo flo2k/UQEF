@@ -30,7 +30,7 @@ class Simulation(object):
         raise NotImplementedError("Should have implemented this")
 
     @abstractmethod
-    def generateSimulationNodes(self, simulationNodes):
+    def generateSimulationNodes(self, simulationNodes, read_nodes_from_file=False, fileName=None):
         raise NotImplementedError("Should have implemented this")
 
     def prepareSolver(self):
