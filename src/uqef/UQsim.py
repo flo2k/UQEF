@@ -127,6 +127,7 @@ class UQsim(object):
         self.parser.add_argument('--transformToStandardDist'   , action='store_true', default=False)
         self.parser.add_argument('--sampleFromStandardDist'   , action='store_true', default=False)
         self.parser.add_argument('--config_file')
+        self.parser.add_argument('--read_nodes_from_file'     , action='store_true', default=False)
         self.parser.add_argument('--parameters_file')
 
         # Solver settings
@@ -263,7 +264,8 @@ class UQsim(object):
                                                                  getattr(cp, parameter_config["distribution"])())
 
                 if self.args.uq_method == "ensemble":
-                    # in case of an ensemble method take a cross product of values_list of all parameters
+                    # in case of an ensemble method read values from a file
+                    # or take a cross product of values_list of all parameters
                     self.simulationNodes.generateNodesFromListOfValues()
 
     def setup_model(self):
@@ -319,7 +321,13 @@ class UQsim(object):
 
             print("initialise simulation...")
 
-            self.simulation.generateSimulationNodes(self.simulationNodes)
+            if self.args.read_nodes_from_file:
+                self.simulation.generateSimulationNodes(self.simulationNodes,
+                                                        self.args.read_nodes_from_file,
+                                                        self.args.parameters_file)
+            else:
+                self.simulation.generateSimulationNodes(self.simulationNodes)
+
             print("")
             print("Nodes setup:")
             print(self.simulationNodes.printNodesSetup())
