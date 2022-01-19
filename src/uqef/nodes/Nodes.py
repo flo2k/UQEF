@@ -6,6 +6,7 @@ Created on 10.05.2015
 
 import chaospy as cp
 import itertools
+import inspect
 import numpy as np
 from tabulate import tabulate
 import matplotlib.pyplot as plotter
@@ -96,7 +97,8 @@ class Nodes(object):
         distNodeNames = [nodeName for nodeName in self.nodeNames if nodeName in self.dists]
         return distNodeNames
 
-    def generateNodesForMC(self, numSamples, rule="R", read_nodes_from_file=False, fileName=None):
+    def generateNodesForMC(self, numSamples, rule="R", read_nodes_from_file=False, parameters_file_name=None,
+                           parameters_setup_file_name=None):
         if self.numSamplesOrScDim == numSamples:
             return self.nodes
 
@@ -115,15 +117,20 @@ class Nodes(object):
                 if self._performTransformation:
                     orderdStandardDists.append(self.standardDists[nameOfNode])
 
+        stochastic_dim = len(orderdDists)  # len(list(self.dists.keys()))
+
         if len(self.dists) > 0:
             self.joinedDists = cp.J(*orderdDists)
             if self._performTransformation:
                 self.joinedStandardDists = cp.J(*orderdStandardDists)
 
             if read_nodes_from_file:
-                nodes_and_weights_array = np.loadtxt(fileName, delimiter=',')
-                self.distNodes = nodes_and_weights_array[:, :3].T
+                nodes_and_weights_array = np.loadtxt(parameters_file_name, delimiter=',')
+                self.distNodes = nodes_and_weights_array[:, :stochastic_dim].T
+                # TODO add weights in case they exist in file
+                #  - self.weights = nodes_and_weights_array[:, stochastic_dim]
                 self.numSamplesOrScDim = len(self.distNodes[0])
+                # TODO update self.standardDists and self.joinedStandardDists
             else:
                 if self._performTransformation:
                     self.distNodes = self.joinedStandardDists.sample(size=numSamples, rule=rule).round(4)
@@ -158,7 +165,7 @@ class Nodes(object):
         return self.nodes, self.parameters
 
     def generateNodesForSC(self, numCollocationPointsPerDim, rule="G", sparse=False, read_nodes_from_file=False,
-                           fileName=None):
+                           parameters_file_name=None, parameters_setup_file_name=None):
 
         if self.numSamplesOrScDim == numCollocationPointsPerDim:
             return self.nodes, self.weights
@@ -187,10 +194,16 @@ class Nodes(object):
             if self._performTransformation:
                 self.joinedStandardDists = cp.J(*orderdStandardDists)
 
+            stochastic_dim = len(orderdDists)  # len(list(self.dists.keys()))
+
             if read_nodes_from_file:
-                nodes_and_weights_array = np.loadtxt(fileName, delimiter=',')
-                self.distNodes = nodes_and_weights_array[:, :3].T
-                self.weights = nodes_and_weights_array[:, 3]
+                nodes_and_weights_array = np.loadtxt(parameters_file_name, delimiter=',')
+                self.distNodes = nodes_and_weights_array[:, :stochastic_dim].T
+                self.weights = nodes_and_weights_array[:, stochastic_dim]
+                # Update self.standardDists and self.joinedStandardDists
+                # in case you are reading nodes and weight from a file based on setup specified in parameters_setup_file_name
+                if self._performTransformation:
+                    self._update_standardDists_and_joinedStandardDists(parameters_setup_file_name)
             else:
                 if self._performTransformation:
                     self.distNodes, self.weights = cp.generate_quadrature(numCollocationPointsPerDim,
@@ -233,9 +246,9 @@ class Nodes(object):
 
         return self.nodes, self.weights, self.parameters
 
-    def generateNodesFromListOfValues(self, fileName=None):
+    def generateNodesFromListOfValues(self, parameters_file_name=None, parameters_setup_file_name=None):
         nodes = []
-        if fileName is not None and fileName:
+        if parameters_file_name is not None and parameters_file_name:
             # reading a matrix of values from a parameters file
             raise NotImplementedError("Should have implemented this")
         else:
@@ -267,13 +280,61 @@ class Nodes(object):
     @staticmethod
     def transformSamples(samples, distribution_r, distribution_q):
         """
-
+        https://chaospy.readthedocs.io/en/master/user_guide/advanced_topics/generalized_polynomial_chaos.html
         :param samples: array of samples from distribution_r
         :param distribution_r: 'standard' distribution
         :param distribution_q: 'user-defined' distribution
         :return: array of samples from distribution_q
         """
+        # TODO Think if trensformation should be done dimensionwise
         return distribution_q.inv(distribution_r.fwd(samples))
+
+    @staticmethod
+    def transformSamples_from_uniform(samples, distribution_r, distribution_q):
+        """
+        :param samples: array of samples from distribution_r, when distribution_r is U[-1,1] or U[0,1]
+        :param distribution_r: 'standard' distribution either U[-1,1] or U[0,1]
+        :param distribution_q: 'user-defined' distribution
+        :return: array of samples from distribution_q
+        """
+        dim = len(distribution_r)
+        assert len(distribution_r) == len(distribution_q)
+        _a = np.empty([dim, 1])
+        _b = np.empty([dim, 1])
+
+        for i in range(dim):
+            r_lower = distribution_r[i].lower
+            q_lower = distribution_q[i].lower
+            q_upper = distribution_q[i].upper
+
+            if r_lower == -1:
+                _a[i] = (q_lower + q_upper) / 2
+                _b[i] = (q_upper - q_lower) / 2
+            elif r_lower == 0:
+                _a[i] = q_lower
+                _b[i] = (q_upper - q_lower)
+
+        return _a + _b * samples
+
+    def _update_standardDists_and_joinedStandardDists(self, parameters_setup_file_name):
+        parameters_configuration_object = json.load(parameters_setup_file_name)
+        for parameter_config in parameters_configuration_object["parameters"]:
+            # node values and distributions -> automatically maps dists and their parameters by reflection mechanisms
+            cp_dist_signature = inspect.signature(getattr(cp, parameter_config["distribution"]))
+            dist_parameters_values = []
+            for p in cp_dist_signature.parameters:
+                dist_parameters_values.append(parameter_config[p])
+            self.assertNodeName(parameter_config["name"])
+            self.standardDists[parameter_config["name"]] = getattr(cp, parameter_config["distribution"])(
+                *dist_parameters_values)
+
+        orderdStandardDists = []
+        for i in range(0, len(self.nodeNames)):
+            nameOfNode = self.nodeNames[i]
+            if nameOfNode in self.standardDists:
+                orderdStandardDists.append(self.standardDists[nameOfNode])
+
+        self.joinedStandardDists = cp.J(*orderdStandardDists)
 
     def __save__cpu_affinity(self):
         # Save cpu pinning: This is necessary, because through chaospy.generate_quadrature() -> scipy.linalg.eig_banded

@@ -29,10 +29,14 @@ class McSimulation(Simulation):
     def getSetup(self):
         return "%s running %d evaluations %s" % (type(self).__name__, self.numEvaluations, "with regression" if self.regression else "")
 
-    def generateSimulationNodes(self, simulationNodes, read_nodes_from_file=False, fileName=None):
-        nodes, parameters = simulationNodes.generateNodesForMC(self.numEvaluations, rule=self.rule,
-                                                               read_nodes_from_file=read_nodes_from_file,
-                                                               fileName=fileName)
+    def generateSimulationNodes(self, simulationNodes, read_nodes_from_file=False, parameters_file_name=None,
+                                parameters_setup_file_name=None):
+        nodes, parameters = simulationNodes.generateNodesForMC(
+            self.numEvaluations, rule=self.rule,
+            read_nodes_from_file=read_nodes_from_file,
+            parameters_file_name=parameters_file_name,
+            parameters_setup_file_name=parameters_setup_file_name
+        )
         nodes = nodes.T
 
         if parameters is not None:

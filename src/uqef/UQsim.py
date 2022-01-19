@@ -129,6 +129,7 @@ class UQsim(object):
         self.parser.add_argument('--config_file')
         self.parser.add_argument('--read_nodes_from_file'     , action='store_true', default=False)
         self.parser.add_argument('--parameters_file')
+        self.parser.add_argument('--parameters_setup_file')
 
         # Solver settings
         self.parser.add_argument('--parallel'                  , action='store_true', default=False)
@@ -228,11 +229,11 @@ class UQsim(object):
             if self.args.uq_method == "ensemble" and self.args.parameters_file:
                 # reading values of the nodes form a file
                 print("Reading nodes values from parameters file {}".format(self.args.parameters_file))
-                self.simulationNodes.generateNodesFromListOfValues(fileName=self.args.parameters_file)
+                self.simulationNodes.generateNodesFromListOfValues(parameters_file_name=self.args.parameters_file)
             else:
                 # branch for all other uq_methods ('sc', 'mc', 'saltelli')
                 # and 'ensemble' when parameters_file is not specified
-                if self.args.sampleFromStandardDist or self.args.transformToStandardDist:
+                if self.args.sampleFromStandardDist:
                     self.simulationNodes.setTransformation()
 
                 for parameter_config in self.configuration_object["parameters"]:
@@ -259,9 +260,21 @@ class UQsim(object):
 
                         # for numerical stability work with nodes from 'standard' distributions,
                         # and use parameters for forcing the model
-                        if self.args.sampleFromStandardDist or self.args.transformToStandardDist:
-                            self.simulationNodes.setStandardDist(parameter_config["name"],
-                                                                 getattr(cp, parameter_config["distribution"])())
+                        if self.args.sampleFromStandardDist:
+                            if parameter_config["distribution"] == "Uniform":
+                                if self.args.uq_method == "sc":  # Gauss–Legendre quadrature
+                                    self.simulationNodes.setStandardDist(parameter_config["name"],
+                                                                         getattr(cp, parameter_config["distribution"])(
+                                                                             lower=-1, upper=1
+                                                                         ))
+                                else:
+                                    self.simulationNodes.setStandardDist(parameter_config["name"],
+                                                                         getattr(cp, parameter_config["distribution"])(
+                                                                             lower=0, upper=1
+                                                                         ))
+                            else:
+                                self.simulationNodes.setStandardDist(parameter_config["name"],
+                                                                     getattr(cp, parameter_config["distribution"])())
 
                 if self.args.uq_method == "ensemble":
                     # in case of an ensemble method read values from a file
@@ -322,9 +335,8 @@ class UQsim(object):
             print("initialise simulation...")
 
             if self.args.read_nodes_from_file:
-                self.simulation.generateSimulationNodes(self.simulationNodes,
-                                                        self.args.read_nodes_from_file,
-                                                        self.args.parameters_file)
+                self.simulation.generateSimulationNodes(self.simulationNodes, self.args.read_nodes_from_file,
+                                                        self.args.parameters_file, self.args.parameters_setup_file)
             else:
                 self.simulation.generateSimulationNodes(self.simulationNodes)
 

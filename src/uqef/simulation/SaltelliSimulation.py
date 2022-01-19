@@ -29,15 +29,20 @@ class SaltelliSimulation(Simulation):
     def getSetup(self):
         return "%s running %d evaluations" % (type(self).__name__, self.numEvaluations*2)
 
-    def generateSimulationNodes(self, simulationNodes, read_nodes_from_file=False, fileName=None):
-        nodes, parameters = simulationNodes.generateNodesForMC(numSamples=self.numEvaluations * 2, rule=self.rule,
-                                                               read_nodes_from_file=read_nodes_from_file,
-                                                               fileName=fileName)
+    def generateSimulationNodes(self, simulationNodes, read_nodes_from_file=False, parameters_file_name=None,
+                                parameters_setup_file_name=None):
+        nodes, parameters = simulationNodes.generateNodesForMC(
+            numSamples=self.numEvaluations * 2, rule=self.rule,
+            read_nodes_from_file=read_nodes_from_file,
+            parameters_file_name=parameters_file_name,
+            parameters_setup_file_name=parameters_setup_file_name
+        )
 
         if parameters is not None:
             temp = parameters
         else:
             temp = nodes
+
         self.nodes = nodes.T
 
         d = simulationNodes.distNodes.shape[0]  # temp.shape[0]

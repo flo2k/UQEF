@@ -31,11 +31,15 @@ class ScSimulation(Simulation):
     def getSetup(self):
         return "%s using q_order=%d and p_order=%d %s" % (type(self).__name__, self.q_order, self.p_order, "with regression" if self.regression else "")
 
-    def generateSimulationNodes(self, simulationNodes, read_nodes_from_file=False, fileName=None):
-        nodes, weights, parameters = simulationNodes.generateNodesForSC(self.q_order, rule=self.rule,
-                                                                        sparse=self.sparse_quadrature,
-                                                                        read_nodes_from_file=read_nodes_from_file,
-                                                                        fileName=fileName)
+    def generateSimulationNodes(self, simulationNodes, read_nodes_from_file=False, parameters_file_name=None,
+                                parameters_setup_file_name=None):
+        nodes, weights, parameters = simulationNodes.generateNodesForSC(
+            self.q_order, rule=self.rule,
+            sparse=self.sparse_quadrature,
+            ead_nodes_from_file=read_nodes_from_file,
+            parameters_file_name=parameters_file_name,
+            parameters_setup_file_name=parameters_setup_file_name
+        )
         nodes = nodes.T
         
         if parameters is not None:
