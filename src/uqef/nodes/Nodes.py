@@ -286,7 +286,7 @@ class Nodes(object):
         :param distribution_q: 'user-defined' distribution
         :return: array of samples from distribution_q
         """
-        # TODO Think if trensformation should be done dimensionwise
+        # TODO Think if transformation should be done dimensionwise
         return distribution_q.inv(distribution_r.fwd(samples))
 
     @staticmethod
@@ -317,7 +317,9 @@ class Nodes(object):
         return _a + _b * samples
 
     def _update_standardDists_and_joinedStandardDists(self, parameters_setup_file_name):
-        parameters_configuration_object = json.load(parameters_setup_file_name)
+        with open(parameters_setup_file_name) as f:
+            parameters_configuration_object = json.load(f)
+
         for parameter_config in parameters_configuration_object["parameters"]:
             # node values and distributions -> automatically maps dists and their parameters by reflection mechanisms
             cp_dist_signature = inspect.signature(getattr(cp, parameter_config["distribution"]))
