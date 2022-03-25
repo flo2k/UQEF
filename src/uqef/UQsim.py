@@ -335,8 +335,12 @@ class UQsim(object):
             print("initialise simulation...")
 
             if self.args.read_nodes_from_file:
-                self.simulation.generateSimulationNodes(self.simulationNodes, self.args.read_nodes_from_file,
-                                                        self.args.parameters_file, self.args.parameters_setup_file)
+                self.simulation.generateSimulationNodes(
+                    self.simulationNodes,
+                    self.args.read_nodes_from_file,
+                    self.args.parameters_file,
+                    self.args.parameters_setup_file
+                )
             else:
                 self.simulation.generateSimulationNodes(self.simulationNodes)
 
@@ -411,6 +415,7 @@ class UQsim(object):
                 self.statistic = self.statistics[self.args.model]()
                 if self.is_master():
                     self.simulation.prepareStatistic(self.statistic, self.simulationNodes)
+                    print("calculate statistics [{}]...".format(type(self.statistic).__name__))
                 calculateStatistics = {
                     "mc"       : (lambda: self.statistic.calcStatisticsForMcParallel(chunksize=self.args.chunksize,
                                                                                      regression=self.args.regression))
