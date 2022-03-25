@@ -36,7 +36,7 @@ class ScSimulation(Simulation):
         nodes, weights, parameters = simulationNodes.generateNodesForSC(
             self.q_order, rule=self.rule,
             sparse=self.sparse_quadrature,
-            ead_nodes_from_file=read_nodes_from_file,
+            read_nodes_from_file=read_nodes_from_file,
             parameters_file_name=parameters_file_name,
             parameters_setup_file_name=parameters_setup_file_name
         )
