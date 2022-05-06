@@ -277,8 +277,8 @@ class UQsim(object):
                                                                      getattr(cp, parameter_config["distribution"])())
 
                 if self.args.uq_method == "ensemble":
-                    # in case of an ensemble method read values from a file
-                    # or take a cross product of values_list of all parameters
+                    # in case of an ensemble method, when parameters_file is not specified,
+                    # take a cross product of values_list of all parameters
                     self.simulationNodes.generateNodesFromListOfValues()
 
     def setup_model(self):
