@@ -226,10 +226,12 @@ class UQsim(object):
                 node_names.append(parameter_config["name"])
             self.setup_nodes(node_names)
 
-            if self.args.uq_method == "ensemble" and self.args.parameters_file:
+            if self.args.uq_method == "ensemble" and self.args.read_nodes_from_file and self.args.parameters_file:
                 # reading values of the nodes form a file
                 print("Reading nodes values from parameters file {}".format(self.args.parameters_file))
-                self.simulationNodes.generateNodesFromListOfValues(parameters_file_name=self.args.parameters_file)
+                self.simulationNodes.generateNodesFromListOfValues(
+                    read_nodes_from_file=self.args.read_nodes_from_file,
+                    parameters_file_name=self.args.parameters_file)
             else:
                 # branch for all other uq_methods ('sc', 'mc', 'saltelli')
                 # and 'ensemble' when parameters_file is not specified

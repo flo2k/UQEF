@@ -134,7 +134,7 @@ class Nodes(object):
                 self.weights_read_from_file = nodes_and_weights_array[:, stochastic_dim]
                 # transform nodes and weight you have read from the file
                 self.distNodes, self.weights = self._transform_nodes_and_weights_read_from_file(
-                    parameters_setup_file_name, self._performTransformation
+                    parameters_setup_file_name, self._performTransformation, stochastic_dim
                 )
                 self.numSamplesOrScDim = len(self.distNodes[0])
             else:
@@ -208,7 +208,7 @@ class Nodes(object):
                 self.weights_read_from_file = nodes_and_weights_array[:, stochastic_dim]
                 # transform nodes and weight you have read from the file
                 self.distNodes, self.weights = self._transform_nodes_and_weights_read_from_file(
-                    parameters_setup_file_name, self._performTransformation
+                    parameters_setup_file_name, self._performTransformation, stochastic_dim
                 )
                 # TODO Update self.numSamplesOrScDim based on what is read from file!
                 self.numSamplesOrScDim = numCollocationPointsPerDim
@@ -254,10 +254,12 @@ class Nodes(object):
 
         return self.nodes, self.weights, self.parameters
 
-    def generateNodesFromListOfValues(self, parameters_file_name=None, parameters_setup_file_name=None):
+    def generateNodesFromListOfValues(self, read_nodes_from_file=False,
+                                      parameters_file_name=None,
+                                      parameters_setup_file_name=None):
         nodes = []
-        if parameters_file_name is not None and parameters_file_name:
-            # reading a matrix of values from a parameters file
+        if read_nodes_from_file and parameters_file_name is not None and parameters_file_name:
+            # reading a matrix of values from a parameters file; read_nodes_from_file=True?
             raise NotImplementedError("Should have implemented this")
         else:
             # creating a matrix of values from default values in a config file
@@ -349,7 +351,16 @@ class Nodes(object):
 
         return _a + _b * samples
 
-    def _transform_nodes_and_weights_read_from_file(self, parameters_setup_file_name, performTransformation):
+    def _transform_nodes_and_weights_read_from_file(self, parameters_setup_file_name, performTransformation, stochastic_dim):
+        """
+        Important function when reading position of the nodes from some file. Ensure that even these nodes are distributed
+        according to required distribution
+
+        :param parameters_setup_file_name: From this file we read a setup/distribution according to which the read nodes are distributed
+        :param performTransformation:
+        :param stochastic_dim:
+        :return:
+        """
         distsOfNodesFromFile = []
         if parameters_setup_file_name is not None:
             with open(parameters_setup_file_name) as f:
