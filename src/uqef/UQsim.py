@@ -139,9 +139,12 @@ class UQsim(object):
         self.parser.add_argument('--mpi_combined_parallel'     , action='store_true', default=False)
 
         # Statistics settings
+
+        self.parser.add_argument('--instantly_save_results_for_each_time_step'       , action='store_true', default=False)
         self.parser.add_argument('--parallel_statistics'       , action='store_true', default=False)
         self.parser.add_argument('--compute_Sobol_t'           , action='store_true', default=True)
         self.parser.add_argument('--compute_Sobol_m'           , action='store_true', default=True)
+        self.parser.add_argument('--compute_Sobol_m2'          , action='store_true', default=False)
 
         # Chunk parameters
         self.parser.add_argument('--chunksize'                 , type=int, default=1)
@@ -260,9 +263,9 @@ class UQsim(object):
                                                      getattr(cp, parameter_config["distribution"])(
                                                          *dist_parameters_values))
 
-                        # for numerical stability work with nodes from 'standard' distributions,
-                        # and use parameters for forcing the model
                         if self.args.sampleFromStandardDist:
+                            # for numerical stability work with nodes from 'standard' distributions,
+                            # and use parameters for forcing the model
                             if parameter_config["distribution"] == "Uniform":
                                 if self.args.uq_method == "sc":  # Gauss–Legendre quadrature
                                     self.simulationNodes.setStandardDist(parameter_config["name"],
@@ -458,10 +461,12 @@ class UQsim(object):
         if self.is_master() and self.args.disable_statistics is False:
             print("generate stat plots...")
             fileName = self.simulation.name
-            self.statistic.plotResults(fileName=fileName, directory=self.args.outputResultDir, display=display, **kwargs)
+            self.statistic.plotResults(display=display, fileName=fileName, directory=self.args.outputResultDir,
+                                       **kwargs)
 
             if self.args.analyse_runtime is True and self.args.model != "runtime":
-                self.runtime_statistic.plotResults(fileName=fileName, directory=self.args.outputResultDir, display=display, **kwargs)
+                self.runtime_statistic.plotResults(display=display, fileName=fileName,
+                                                   directory=self.args.outputResultDir, **kwargs)
 
     def plot_animations(self, timesteps, display=False, **kwargs):
         if self.is_master() and self.args.disable_statistics is False:
