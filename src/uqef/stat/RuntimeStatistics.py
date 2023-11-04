@@ -233,9 +233,9 @@ class RuntimeStatistics(Statistics):
 
         self.Sobol_t_runtime = cp.Sens_t(self.GPCe_runtime, dist)
 
-    def calcStatisticsForSaltelli(self, rawSamples, timesteps,
-                            simulationNodes, numEvaluations, order, regression, solverTimes,
-                            work_package_indexes, original_runtime_estimator=None):
+    def calcStatisticsForMcSaltelli(self, rawSamples, timesteps,
+                                    simulationNodes, numEvaluations, order, regression, solverTimes,
+                                    work_package_indexes, original_runtime_estimator=None):
         # TODO: do some tests with separate implementation of Saltelli stats
         self.calcStatisticsForMc(rawSamples, timesteps,
                             simulationNodes, numEvaluations, order, regression, solverTimes,

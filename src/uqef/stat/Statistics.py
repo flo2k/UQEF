@@ -31,15 +31,15 @@ class Statistics(object):
     def set_nodes(self, simulationNodes):
         pass
 
-    def preparePolyExpanForMc(self, simulationNodes, numEvaluations, regression, order,
-                              poly_normed, poly_rule, *args, **kwargs):
+    def prepareForMcStatistics(self, simulationNodes, numEvaluations, regression, order,
+                               poly_normed, poly_rule, *args, **kwargs):
         pass
 
-    def preparePolyExpanForSc(self, simulationNodes, order, poly_normed, poly_rule, *args, **kwargs):
+    def prepareForScStatistics(self, simulationNodes, order, poly_normed, poly_rule, *args, **kwargs):
         pass
 
-    def preparePolyExpanForSaltelli(self, simulationNodes, numEvaluations, regression, order,
-                                    poly_normed, poly_rule, *args, **kwargs):
+    def prepareForMcSaltelliStatistics(self, simulationNodes, numEvaluations, regression, order,
+                                       poly_normed, poly_rule, *args, **kwargs):
         pass
 
     def calcStatisticsForMcParallel(self, chunksize=1, *args, **kwargs):
@@ -48,7 +48,7 @@ class Statistics(object):
     def calcStatisticsForScParallel(self, chunksize=1, *args, **kwargs):
         pass
 
-    def calcStatisticsForSaltelliParallel(self, chunksize=1, *args, **kwargs):
+    def calcStatisticsForMcSaltelliParallel(self, chunksize=1, *args, **kwargs):
         pass
 
     def calcStatisticsForEnsembleParallel(self, chunksize=1, *args, **kwargs):
@@ -65,9 +65,9 @@ class Statistics(object):
                             work_package_indexes, original_runtime_estimator=None, *args, **kwargs):
         pass
 
-    def calcStatisticsForSaltelli(self, rawSamples, timesteps,
-                            simulationNodes, numEvaluations, order, regression, poly_normed, poly_rule, solverTimes,
-                            work_package_indexes, original_runtime_estimator=None, *args, **kwargs):
+    def calcStatisticsForMcSaltelli(self, rawSamples, timesteps,
+                                    simulationNodes, numEvaluations, order, regression, poly_normed, poly_rule, solverTimes,
+                                    work_package_indexes, original_runtime_estimator=None, *args, **kwargs):
         pass
 
     def calcStatisticsForEnsemble(self, rawSamples, timesteps, simulationNodes, numEvaluations, solverTimes,
@@ -91,8 +91,9 @@ class Statistics(object):
     def generateFileName(self,
                          fileName="", fileNameIdent="", directory="./",
                          fileNameIdentIsFullName=False):
-        if not directory.endswith("/"):
-            directory = directory + "/"
+
+        if not str(directory).endswith("/"):
+            directory = str(directory) + "/"
 
         if fileName == "":
             fileName = os.path.splitext(sys.argv[0])[0]
