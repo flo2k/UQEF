@@ -222,7 +222,7 @@ if mpi == False or (mpi == True and rank == 0):
     #####################################
     print("generate plots...")
     fileName = simulation.name
-    statistics.plotResults(fileName=fileName, directory=outputResultDir, display=False)
+    statistics.plotResults(display=False, fileName=fileName, directory=outputResultDir)
 
 if mpi == True:
     print("rank: {} exit".format(rank))

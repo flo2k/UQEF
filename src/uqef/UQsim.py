@@ -98,6 +98,7 @@ class UQsim(object):
         self.parser.add_argument('--uqsim_file'                , default="uqsim.saved")
         self.parser.add_argument('--uqsim_store_to_file'       , action='store_true', default=False)
         self.parser.add_argument('--uqsim_restore_from_file'   , action='store_true', default=False)
+        self.parser.add_argument('--disable_calc_statistics'   , action='store_true', default=False)
         self.parser.add_argument('--disable_recalc_statistics' , action='store_true', default=False)
         self.parser.add_argument('--disable_statistics'        , action='store_true', default=False)
 
@@ -242,9 +243,18 @@ class UQsim(object):
                     self.simulationNodes.setTransformation()
 
                 for parameter_config in self.configuration_object["parameters"]:
-                    if parameter_config["distribution"] == "None":
+                    if self.args.uq_method == "ensemble":
+                        if "values_list" in parameter_config:
+                            self.simulationNodes.setValue(parameter_config["name"], parameter_config["values_list"])
+                        elif "default" in parameter_config:
+                            self.simulationNodes.setValue(parameter_config["name"], parameter_config["default"])
+                        else:
+                            raise Exception(f"Error in UQSim.setup_nodes_via_config_file_or_parameters_file() : "
+                                            f" an ensemble simulation should be run, "
+                                            f"but values_list or default entries for parameter values are missing")
+                    elif parameter_config["distribution"] == "None":
                         # take default value(s) from config file
-                        if self.args.uq_method == "ensemble" and "values_list" in parameter_config:
+                        if "values_list" in parameter_config:
                             self.simulationNodes.setValue(parameter_config["name"], parameter_config["values_list"])
                         elif 'default' in parameter_config:
                             self.simulationNodes.setValue(parameter_config["name"], parameter_config["default"])
@@ -414,25 +424,40 @@ class UQsim(object):
                 print("solver time: {} sec".format(solver_time))
                 sys.stdout.flush()
 
-    def calc_statistics(self, **kwargs):
-        if self.args.disable_statistics is False and self.args.disable_recalc_statistics is False:
+    def prepare_statistics(self, **kwargs):
+        if self.args.disable_statistics is False:
             if self.args.mpi is True and self.args.parallel_statistics is True:
+                # when parallel_statistics is set to True, eche process should have a Statistics object
                 self.statistic = self.statistics[self.args.model]()
                 if self.is_master():
                     self.simulation.prepareStatistic(self.statistic, self.simulationNodes)
+                    print("preparing statistics [{}]...".format(type(self.statistic).__name__))
+            elif self.is_master():
+                self.statistic = self.statistics[self.args.model]()
+                self.simulation.prepareStatistic(self.statistic, self.simulationNodes)
+                print("preparing statistics [{}]...".format(type(self.statistic).__name__))
+
+    def calc_statistics(self, **kwargs):
+        if self.args.disable_statistics is False and self.args.disable_calc_statistics \
+                is False and self.args.disable_recalc_statistics is False:
+            if self.args.mpi is True and self.args.parallel_statistics is True:
+                if self.is_master():
                     print("calculate statistics [{}]...".format(type(self.statistic).__name__))
                 calculateStatistics = {
-                    "mc"       : (lambda: self.statistic.calcStatisticsForMcParallel(chunksize=self.args.chunksize,
-                                                                                     regression=self.args.regression))
-                    ,"sc"      : (lambda: self.statistic.calcStatisticsForScParallel(chunksize=self.args.chunksize,
-                                                                                     regression=self.args.regression))
-                    ,"saltelli": (lambda: self.statistic.calcStatisticsForSaltelliParallel(chunksize=self.args.chunksize,
-                                                                                           regression=self.args.regression))
-                    ,"ensemble": (lambda: self.statistic.calcStatisticsForEnsembleParallel(chunksize=self.args.chunksize))
+                    "mc"       : (lambda: self.statistic.calcStatisticsForMcParallel(
+                        chunksize=self.args.chunksize,
+                        regression=self.args.regression))
+                    ,"sc"      : (lambda: self.statistic.calcStatisticsForScParallel(
+                        chunksize=self.args.chunksize,
+                        regression=self.args.regression))
+                    ,"saltelli": (lambda: self.statistic.calcStatisticsForMcSaltelliParallel(
+                        chunksize=self.args.chunksize,
+                        regression=self.args.regression))
+                    ,"ensemble": (lambda: self.statistic.calcStatisticsForEnsembleParallel(
+                        chunksize=self.args.chunksize))
                 }
                 calculateStatistics[self.args.uq_method]()
             elif self.is_master():
-                self.statistic = self.statistics[self.args.model]()
                 print("calculate statistics [{}]...".format(type(self.statistic).__name__))
                 self.simulation.calculateStatistics(self.statistic, self.simulationNodes, self.runtime_estimator, **kwargs)
 
@@ -442,6 +467,40 @@ class UQsim(object):
                     self.runtime_statistic = self.statistics["runtime"]()
                     print("calculate statistics [{}]...".format(type(self.runtime_statistic).__name__))
                     self.simulation.calculateStatistics(self.runtime_statistic, self.simulationNodes, self.runtime_estimator, **kwargs)
+
+    # def calc_statistics(self, **kwargs):
+    #     if self.args.disable_statistics is False and self.args.disable_recalc_statistics is False:
+    #         if self.args.mpi is True and self.args.parallel_statistics is True:
+    #             self.statistic = self.statistics[self.args.model]()
+    #             if self.is_master():
+    #                 self.simulation.prepareStatistic(self.statistic, self.simulationNodes)
+    #                 print("calculate statistics [{}]...".format(type(self.statistic).__name__))
+    #             calculateStatistics = {
+    #                 "mc"       : (lambda: self.statistic.calcStatisticsForMcParallel(
+    #                     chunksize=self.args.chunksize,
+    #                     regression=self.args.regression))
+    #                 ,"sc"      : (lambda: self.statistic.calcStatisticsForScParallel(
+    #                     chunksize=self.args.chunksize,
+    #                     regression=self.args.regression))
+    #                 ,"saltelli": (lambda: self.statistic.calcStatisticsForMcSaltelliParallel(
+    #                     chunksize=self.args.chunksize,
+    #                     regression=self.args.regression))
+    #                 ,"ensemble": (lambda: self.statistic.calcStatisticsForEnsembleParallel(
+    #                     chunksize=self.args.chunksize))
+    #             }
+    #             calculateStatistics[self.args.uq_method]()
+    #         elif self.is_master():
+    #             self.statistic = self.statistics[self.args.model]()
+    #             self.simulation.prepareStatistic(self.statistic, self.simulationNodes)
+    #             print("calculate statistics [{}]...".format(type(self.statistic).__name__))
+    #             self.simulation.calculateStatistics(self.statistic, self.simulationNodes, self.runtime_estimator, **kwargs)
+    #
+    #             if self.args.analyse_runtime is True and self.args.model == "runtime":
+    #                 self.runtime_statistic = self.statistic
+    #             elif self.args.analyse_runtime is True:
+    #                 self.runtime_statistic = self.statistics["runtime"]()
+    #                 print("calculate statistics [{}]...".format(type(self.runtime_statistic).__name__))
+    #                 self.simulation.calculateStatistics(self.runtime_statistic, self.simulationNodes, self.runtime_estimator, **kwargs)
 
     def print_statistics(self, **kwargs):
         if self.is_master() and self.args.disable_statistics is False:
