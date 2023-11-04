@@ -10,7 +10,7 @@ import numpy as np
 
 class SaltelliSimulation(Simulation):
     """
-    SaltelliSimulation does a saltelli simulation
+    SaltelliSimulation performs MC Saltelli-like simulation
     """
     def __init__(self, solver, numEvaluations, p_order, rule="R", regression=False,
                  poly_normed=False, poly_rule="three_terms_recurrence", *args, **kwargs):
@@ -27,7 +27,10 @@ class SaltelliSimulation(Simulation):
         self.nodes = None
 
     def getSetup(self):
-        return "%s running %d evaluations" % (type(self).__name__, self.numEvaluations*2)
+        if self.parameters is not None:
+            return "%s running %d evaluations" % (type(self).__name__, len(self.parameters))
+        else:
+            return "%s running %d evaluations" % (type(self).__name__, self.numEvaluations*2)
 
     def generateSimulationNodes(self, simulationNodes, read_nodes_from_file=False, parameters_file_name=None,
                                 parameters_setup_file_name=None):
@@ -58,7 +61,7 @@ class SaltelliSimulation(Simulation):
         matrix_B = self._get_matrix(matrix_A=m1, matrix_B=m2, indices=ones)
         matrix_A_B = np.concatenate([self._get_matrix(matrix_A=m1, matrix_B=m2, indices=index) for index in np.eye(d, dtype=bool)], axis=1)
         self.parameters = np.concatenate([matrix_A, matrix_B, matrix_A_B], axis=1)
-        self.parameters = self.parameters.T  # should be in Saltelli case N*(d+2) x d
+        self.parameters = self.parameters.T  # should be in Saltelli's case N*(d+2) x d
 
     def prepareStatistic(self, statistics, simulationNodes, original_runtime_estimator=None, *args, **kwargs):
         timesteps = self.solver.timesteps()
@@ -66,8 +69,8 @@ class SaltelliSimulation(Simulation):
                            timesteps=timesteps,
                            solverTimes=self.solver.solverTimes,
                            work_package_indexes=self.solver.work_package_indexes)
-        statistics.preparePolyExpanForSaltelli(simulationNodes, self.numEvaluations, self.regression, self.p_order,
-                                         self.poly_normed, self.poly_rule)
+        statistics.prepareForMcSaltelliStatistics(simulationNodes, self.numEvaluations, self.regression, self.p_order,
+                                                  self.poly_normed, self.poly_rule)
 
     def calculateStatistics(self, statistics, simulationNodes, original_runtime_estimator=None, *args, **kwargs):
             model_results = self.solver.results
@@ -75,10 +78,10 @@ class SaltelliSimulation(Simulation):
             solverTimes = self.solver.solverTimes
             self.original_runtime_estimator = original_runtime_estimator
 
-            statistics.calcStatisticsForSaltelli(model_results, timesteps, simulationNodes,
-                                                 self.numEvaluations, self.p_order,
-                                                 self.regression, self.poly_normed, self.poly_rule, solverTimes,
-                                                 self.solver.work_package_indexes, self.original_runtime_estimator, *args, **kwargs)
+            statistics.calcStatisticsForMcSaltelli(model_results, timesteps, simulationNodes,
+                                                   self.numEvaluations, self.p_order,
+                                                   self.regression, self.poly_normed, self.poly_rule, solverTimes,
+                                                   self.solver.work_package_indexes, self.original_runtime_estimator, *args, **kwargs)
             return statistics  # TODO remove return?
 
     @staticmethod
@@ -87,7 +90,7 @@ class SaltelliSimulation(Simulation):
         Input matrices should be of dimension dim x number_of_samples
         len(indices) should be equal to the dim
 
-        Return: A_B matrix from Saltelli 2010 paper
+        Return: A_B matrix from Saltelli's 2010 paper
         """
         new = np.empty(matrix_A.shape)
         for idx in range(len(indices)):

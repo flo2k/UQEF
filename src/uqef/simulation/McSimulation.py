@@ -51,8 +51,8 @@ class McSimulation(Simulation):
                            timesteps=timesteps,
                            solverTimes=self.solver.solverTimes,
                            work_package_indexes=self.solver.work_package_indexes)
-        statistics.preparePolyExpanForMc(simulationNodes, self.numEvaluations, self.regression, self.p_order,
-                                         self.poly_normed, self.poly_rule)
+        statistics.prepareForMcStatistics(simulationNodes, self.numEvaluations, self.regression, self.p_order,
+                                          self.poly_normed, self.poly_rule)
 
     def calculateStatistics(self, statistics, simulationNodes, original_runtime_estimator=None, *args, **kwargs):
         model_results = self.solver.results
