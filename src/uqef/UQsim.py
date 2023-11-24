@@ -1,5 +1,3 @@
-
-
 # parsing args
 import argparse
 
@@ -44,6 +42,7 @@ if rank == 0: print("mpi4py version: {}".format(mpi4py.__version__))
 
 print("rank {}: starttime: {}".format(rank, datetime.datetime.now().strftime('%Y.%m.%d %H:%M:%S')))
 
+
 def model_generator():
     return model_generator.model()
 
@@ -59,7 +58,7 @@ class UQsim(object):
 
         if self.args.uqsim_restore_from_file:
             self.restore_from_file()
-            self.parse_args() # reparse args to overwrite old arguments
+            self.parse_args()  # reparse args to overwrite old arguments
             self.__restored = True
         else:
             self.models = {
@@ -302,10 +301,12 @@ class UQsim(object):
     def setup_solver(self):
         if self.args.mpi is True:
             solvers = {
-                "MpiPoolSolver": (lambda: uqef.solver.MpiPoolSolver(model_generator, mpi_chunksize=self.args.mpi_chunksize,
-                                                          combinedParallel=self.args.mpi_combined_parallel, num_cores=self.args.num_cores))
-               ,"MpiSolver"    : (lambda: uqef.solver.MpiSolver(model_generator, mpi_chunksize=self.args.mpi_chunksize,
-                                                         combinedParallel=self.args.mpi_combined_parallel, num_cores=self.args.num_cores))
+                "MpiPoolSolver": (lambda: uqef.solver.MpiPoolSolver(
+                    model_generator, mpi_chunksize=self.args.mpi_chunksize,
+                    combinedParallel=self.args.mpi_combined_parallel, num_cores=self.args.num_cores))
+               ,"MpiSolver"    : (lambda: uqef.solver.MpiSolver(
+                    model_generator, mpi_chunksize=self.args.mpi_chunksize,
+                    combinedParallel=self.args.mpi_combined_parallel, num_cores=self.args.num_cores))
             }
             self.solver = solvers[self.args.mpi_method]()
         elif self.args.parallel:
@@ -406,8 +407,10 @@ class UQsim(object):
             # strategy  = uqef.schedule.Strategy.DYNAMIC
 
             if self.is_master():
-                print("Opt algorithm: {}".format(list(uqef.schedule.Algorithms.keys())[list(uqef.schedule.Algorithms.values()).index(algorithm)]))
-                print("Opt strategy: {}".format(list(uqef.schedule.Strategies.keys())[list(uqef.schedule.Strategies.values()).index(strategy)]))
+                print("Opt algorithm: {}".format(
+                    list(uqef.schedule.Algorithms.keys())[list(uqef.schedule.Algorithms.values()).index(algorithm)]))
+                print("Opt strategy: {}".format(
+                    list(uqef.schedule.Strategies.keys())[list(uqef.schedule.Strategies.values()).index(strategy)]))
                 sys.stdout.flush()
 
             # do the solving => the propagation
@@ -459,48 +462,16 @@ class UQsim(object):
                 calculateStatistics[self.args.uq_method]()
             elif self.is_master():
                 print("calculate statistics [{}]...".format(type(self.statistic).__name__))
-                self.simulation.calculateStatistics(self.statistic, self.simulationNodes, self.runtime_estimator, **kwargs)
+                self.simulation.calculateStatistics(
+                    self.statistic, self.simulationNodes, self.runtime_estimator, **kwargs)
 
                 if self.args.analyse_runtime is True and self.args.model == "runtime":
                     self.runtime_statistic = self.statistic
                 elif self.args.analyse_runtime is True:
                     self.runtime_statistic = self.statistics["runtime"]()
                     print("calculate statistics [{}]...".format(type(self.runtime_statistic).__name__))
-                    self.simulation.calculateStatistics(self.runtime_statistic, self.simulationNodes, self.runtime_estimator, **kwargs)
-
-    # def calc_statistics(self, **kwargs):
-    #     if self.args.disable_statistics is False and self.args.disable_recalc_statistics is False:
-    #         if self.args.mpi is True and self.args.parallel_statistics is True:
-    #             self.statistic = self.statistics[self.args.model]()
-    #             if self.is_master():
-    #                 self.simulation.prepareStatistic(self.statistic, self.simulationNodes)
-    #                 print("calculate statistics [{}]...".format(type(self.statistic).__name__))
-    #             calculateStatistics = {
-    #                 "mc"       : (lambda: self.statistic.calcStatisticsForMcParallel(
-    #                     chunksize=self.args.chunksize,
-    #                     regression=self.args.regression))
-    #                 ,"sc"      : (lambda: self.statistic.calcStatisticsForScParallel(
-    #                     chunksize=self.args.chunksize,
-    #                     regression=self.args.regression))
-    #                 ,"saltelli": (lambda: self.statistic.calcStatisticsForMcSaltelliParallel(
-    #                     chunksize=self.args.chunksize,
-    #                     regression=self.args.regression))
-    #                 ,"ensemble": (lambda: self.statistic.calcStatisticsForEnsembleParallel(
-    #                     chunksize=self.args.chunksize))
-    #             }
-    #             calculateStatistics[self.args.uq_method]()
-    #         elif self.is_master():
-    #             self.statistic = self.statistics[self.args.model]()
-    #             self.simulation.prepareStatistic(self.statistic, self.simulationNodes)
-    #             print("calculate statistics [{}]...".format(type(self.statistic).__name__))
-    #             self.simulation.calculateStatistics(self.statistic, self.simulationNodes, self.runtime_estimator, **kwargs)
-    #
-    #             if self.args.analyse_runtime is True and self.args.model == "runtime":
-    #                 self.runtime_statistic = self.statistic
-    #             elif self.args.analyse_runtime is True:
-    #                 self.runtime_statistic = self.statistics["runtime"]()
-    #                 print("calculate statistics [{}]...".format(type(self.runtime_statistic).__name__))
-    #                 self.simulation.calculateStatistics(self.runtime_statistic, self.simulationNodes, self.runtime_estimator, **kwargs)
+                    self.simulation.calculateStatistics(
+                        self.runtime_statistic, self.simulationNodes, self.runtime_estimator, **kwargs)
 
     def print_statistics(self, **kwargs):
         if self.is_master() and self.args.disable_statistics is False:
@@ -531,9 +502,11 @@ class UQsim(object):
         if self.is_master() and self.args.disable_statistics is False:
             print("generate stat animations...")
             fileName = self.simulation.name
-            self.statistic.plotAnimation(timesteps, fileName=fileName, directory=self.args.outputResultDir, display=display, **kwargs)
+            self.statistic.plotAnimation(
+                timesteps, fileName=fileName, directory=self.args.outputResultDir, display=display, **kwargs)
             if self.args.analyse_runtime is True and self.args.model != "runtime":
-                self.runtime_statistic.plotAnimation(timesteps, fileName=fileName, directory=self.args.outputResultDir, display=display, **kwargs)
+                self.runtime_statistic.plotAnimation(
+                    timesteps, fileName=fileName, directory=self.args.outputResultDir, display=display, **kwargs)
 
     def save_simulationNodes(self, fileName=None):
         if self.is_master():
@@ -541,7 +514,6 @@ class UQsim(object):
             if fileName is None:
                 fileName = self.simulation.name
             self.simulationNodes.saveToFile(self.args.outputResultDir + "/" + fileName)
-
 
     def save_statistics(self, **kwargs):
         if self.is_master() and self.args.disable_statistics is False:
