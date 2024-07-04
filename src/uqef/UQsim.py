@@ -125,9 +125,9 @@ class UQsim(object):
         self.parser.add_argument('--sc_poly_rule'              , default="three_terms_recurrence") # "gram_schmidt" | "three_terms_recurrence" | "cholesky"
         self.parser.add_argument('--sampling_rule'             , default='random')  # "sobol" | "latin_hypercube" | "halton"  | "hammersley"
         self.parser.add_argument('--transformToStandardDist'   , action='store_true', default=False)
-        self.parser.add_argument('--sampleFromStandardDist'   , action='store_true', default=False)
+        self.parser.add_argument('--sampleFromStandardDist'    , action='store_true', default=False)
         self.parser.add_argument('--config_file')
-        self.parser.add_argument('--read_nodes_from_file'     , action='store_true', default=False)
+        self.parser.add_argument('--read_nodes_from_file'      , action='store_true', default=False)
         self.parser.add_argument('--parameters_file')
         self.parser.add_argument('--parameters_setup_file')
 
@@ -142,9 +142,13 @@ class UQsim(object):
 
         self.parser.add_argument('--instantly_save_results_for_each_time_step'       , action='store_true', default=False)
         self.parser.add_argument('--parallel_statistics'       , action='store_true', default=False)
-        self.parser.add_argument('--compute_Sobol_t'           , action='store_true', default=True)
-        self.parser.add_argument('--compute_Sobol_m'           , action='store_true', default=True)
+        self.parser.add_argument('--compute_Sobol_t'           , action='store_true', default=False)
+        self.parser.add_argument('--compute_Sobol_m'           , action='store_true', default=False)
         self.parser.add_argument('--compute_Sobol_m2'          , action='store_true', default=False)
+        self.parser.add_argument('--save_all_simulations'      , action='store_true', default=False)  # This might be a lot of data
+        self.parser.add_argument('--store_qoi_data_in_stat_dict'      , action='store_true', default=False)
+        self.parser.add_argument('--store_gpce_surrogate_in_stat_dict'      , action='store_true', default=False)  # Only relevant for sc mode when the gPCE surrogate is produced
+        self.parser.add_argument('--collect_and_save_state_data'      , action='store_true', default=False)  # Only relevant for models which produce some state data as well
 
         # Chunk parameters
         self.parser.add_argument('--chunksize'                 , type=int, default=1)
@@ -431,11 +435,13 @@ class UQsim(object):
         if self.args.disable_statistics is False:
             if self.args.mpi is True and self.args.parallel_statistics is True:
                 # when parallel_statistics is set to True, eche process should have a Statistics object
+                print("create statistics object for the [{}] model...".format(self.args.model))
                 self.statistic = self.statistics[self.args.model]()
                 if self.is_master():
                     self.simulation.prepareStatistic(self.statistic, self.simulationNodes)
                     print("preparing statistics [{}]...".format(type(self.statistic).__name__))
             elif self.is_master():
+                print("create statistics object for the [{}] model".format(self.args.model))
                 self.statistic = self.statistics[self.args.model]()
                 self.simulation.prepareStatistic(self.statistic, self.simulationNodes)
                 print("preparing statistics [{}]...".format(type(self.statistic).__name__))
