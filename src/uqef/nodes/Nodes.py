@@ -139,11 +139,11 @@ class Nodes(object):
                 self.numSamplesOrScDim = len(self.distNodes[0])
             else:
                 if self._performTransformation:
-                    self.distNodes = self.joinedStandardDists.sample(size=numSamples, rule=rule).round(4)
+                    self.distNodes = self.joinedStandardDists.sample(size=numSamples, rule=rule)#.round(4)
                 else:
                     #self.distNodes = self.joinedDists.sample(numSamples, rule=rule).round(4)
                     #self.distNodes = cp.generate_samples(order=numSamples, domain=self.joinedDists, rule=rule).round(4)
-                    self.distNodes = self.joinedDists.sample(size=numSamples, rule=rule).round(4)
+                    self.distNodes = self.joinedDists.sample(size=numSamples, rule=rule)#.round(4)
 
         nodes = []
 
