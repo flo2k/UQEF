@@ -22,6 +22,7 @@ class SaltelliSimulation(Simulation):
         self.rule = rule
         self.poly_normed = poly_normed
         self.poly_rule = poly_rule
+        self.cross_truncation = kwargs.get("cross_truncation", 1.0)
 
         self.parameters = None
         self.nodes = None
@@ -70,7 +71,7 @@ class SaltelliSimulation(Simulation):
                            solverTimes=self.solver.solverTimes,
                            work_package_indexes=self.solver.work_package_indexes)
         statistics.prepareForMcSaltelliStatistics(simulationNodes, self.numEvaluations, self.regression, self.p_order,
-                                                  self.poly_normed, self.poly_rule)
+                                                  self.poly_normed, self.poly_rule, cross_truncation=self.cross_truncation)
 
     def calculateStatistics(self, statistics, simulationNodes, original_runtime_estimator=None, *args, **kwargs):
             model_results = self.solver.results

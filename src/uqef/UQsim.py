@@ -123,6 +123,7 @@ class UQsim(object):
         self.parser.add_argument('--sc_quadrature_rule'        , default='G')
         self.parser.add_argument('--sc_poly_normed'            , action='store_true', default=False)
         self.parser.add_argument('--sc_poly_rule'              , default="three_terms_recurrence") # "gram_schmidt" | "three_terms_recurrence" | "cholesky"
+        self.parser.add_argument('--cross_truncation'          , type=float, default=1.0)
         self.parser.add_argument('--sampling_rule'             , default='random')  # "sobol" | "latin_hypercube" | "halton"  | "hammersley"
         self.parser.add_argument('--transformToStandardDist'   , action='store_true', default=False)
         self.parser.add_argument('--sampleFromStandardDist'    , action='store_true', default=False)
@@ -324,28 +325,34 @@ class UQsim(object):
     def setup_simulation(self):
         if self.is_master():
             simulations = {
-                "mc"      : (lambda: uqef.simulation.McSimulation(self.solver,
-                                                                  self.args.mc_numevaluations,
-                                                                  self.args.sc_p_order,
-                                                                  self.args.sampling_rule,
-                                                                  self.args.regression,
-                                                                  self.args.sc_poly_normed,
-                                                                  self.args.sc_poly_rule))
-                , "sc"      : (lambda: uqef.simulation.ScSimulation(self.solver,
-                                                                    self.args.sc_q_order,
-                                                                    self.args.sc_p_order,
-                                                                    self.args.sc_quadrature_rule,
-                                                                    self.args.sc_sparse_quadrature,
-                                                                    self.args.regression,
-                                                                    self.args.sc_poly_normed,
-                                                                    self.args.sc_poly_rule))
-                , "saltelli": (lambda: uqef.simulation.SaltelliSimulation(self.solver,
-                                                                          self.args.mc_numevaluations,
-                                                                          self.args.sc_p_order,
-                                                                          self.args.sampling_rule,
-                                                                          self.args.regression,
-                                                                          self.args.sc_poly_normed,
-                                                                          self.args.sc_poly_rule))
+                "mc"      : (lambda: uqef.simulation.McSimulation(
+                    self.solver,
+                    self.args.mc_numevaluations,
+                    self.args.sc_p_order,
+                    self.args.sampling_rule,
+                    self.args.regression,
+                    self.args.sc_poly_normed,
+                    self.args.sc_poly_rule,
+                    cross_truncation=self.args.cross_truncation))
+                , "sc"      : (lambda: uqef.simulation.ScSimulation(
+                    self.solver,
+                    self.args.sc_q_order,
+                    self.args.sc_p_order,
+                    self.args.sc_quadrature_rule,
+                    self.args.sc_sparse_quadrature,
+                    self.args.regression,
+                    self.args.sc_poly_normed,
+                    self.args.sc_poly_rule,
+                    cross_truncation=self.args.cross_truncation))
+                , "saltelli": (lambda: uqef.simulation.SaltelliSimulation(
+                    self.solver,
+                    self.args.mc_numevaluations,
+                    self.args.sc_p_order,
+                    self.args.sampling_rule,
+                    self.args.regression,
+                    self.args.sc_poly_normed,
+                    self.args.sc_poly_rule,
+                    cross_truncation=self.args.cross_truncation))
                 , "ensemble": (lambda: uqef.simulation.EnsembleSimulation(self.solver))
             }
             self.simulation = simulations[self.args.uq_method]()
