@@ -289,6 +289,10 @@ class Nodes(object):
 
     @staticmethod
     def transformSamples_lin_or_nonlin(samples, distribution_r, distribution_q, linear=True):
+        """
+        Note: Linear transformation only covers the case of transforming r.v. distributed accoring to some
+         Uniform distribution to standard Uniform distribution (U[-1,1] or U[0,1])
+        """
         if linear:
             dim = len(distribution_r)
             assert len(distribution_r) == len(distribution_q)
@@ -353,8 +357,8 @@ class Nodes(object):
 
     def _transform_nodes_and_weights_read_from_file(self, parameters_setup_file_name, performTransformation, stochastic_dim):
         """
-        Important function when reading position of the nodes from some file. Ensure that even these nodes are distributed
-        according to required distribution
+        Important function when reading position of the nodes from some file. Ensure that these nodes are distributed
+        according to desired distribution specified in the configuration file.
 
         :param parameters_setup_file_name: From this file we read a setup/distribution according to which the read nodes are distributed
         :param performTransformation:
@@ -381,12 +385,12 @@ class Nodes(object):
         jointDistOfNodesFromFile = cp.J(*distsOfNodesFromFile)
 
         if performTransformation:
-            distNodes = Nodes.transformSamples_lin_or_nonlin(
-                self.nodes_read_from_file, jointDistOfNodesFromFile, self.joinedStandardDists, linear=False)
+            distNodes = Nodes.transformSamples(
+                self.nodes_read_from_file, jointDistOfNodesFromFile, self.joinedStandardDists)
             weights = self.weights_read_from_file
         else:
-            distNodes = Nodes.transformSamples_lin_or_nonlin(
-                self.nodes_read_from_file, jointDistOfNodesFromFile, self.joinedDists, linear=False)
+            distNodes = Nodes.transformSamples(
+                self.nodes_read_from_file, jointDistOfNodesFromFile, self.joinedDists)
             weights = self.weights_read_from_file
         return distNodes, weights
 
