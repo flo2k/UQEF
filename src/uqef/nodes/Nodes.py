@@ -395,27 +395,27 @@ class Nodes(object):
         return distNodes, weights
 
     # note: delete this eventually - not used
-    def _update_standardDists_and_joinedStandardDists(self, parameters_setup_file_name):
-        with open(parameters_setup_file_name) as f:
-            parameters_configuration_object = json.load(f)
+    # def _update_standardDists_and_joinedStandardDists(self, parameters_setup_file_name):
+    #     with open(parameters_setup_file_name) as f:
+    #         parameters_configuration_object = json.load(f)
 
-        for parameter_config in parameters_configuration_object["parameters"]:
-            # node values and distributions -> automatically maps dists and their parameters by reflection mechanisms
-            cp_dist_signature = inspect.signature(getattr(cp, parameter_config["distribution"]))
-            dist_parameters_values = []
-            for p in cp_dist_signature.parameters:
-                dist_parameters_values.append(parameter_config[p])
-            self.assertNodeName(parameter_config["name"])
-            self.standardDists[parameter_config["name"]] = getattr(cp, parameter_config["distribution"])(
-                *dist_parameters_values)
+    #     for parameter_config in parameters_configuration_object["parameters"]:
+    #         # node values and distributions -> automatically maps dists and their parameters by reflection mechanisms
+    #         cp_dist_signature = inspect.signature(getattr(cp, parameter_config["distribution"]))
+    #         dist_parameters_values = []
+    #         for p in cp_dist_signature.parameters:
+    #             dist_parameters_values.append(parameter_config[p])
+    #         self.assertNodeName(parameter_config["name"])
+    #         self.standardDists[parameter_config["name"]] = getattr(cp, parameter_config["distribution"])(
+    #             *dist_parameters_values)
 
-        orderdStandardDists = []
-        for i in range(0, len(self.nodeNames)):
-            nameOfNode = self.nodeNames[i]
-            if nameOfNode in self.standardDists:
-                orderdStandardDists.append(self.standardDists[nameOfNode])
+    #     orderdStandardDists = []
+    #     for i in range(0, len(self.nodeNames)):
+    #         nameOfNode = self.nodeNames[i]
+    #         if nameOfNode in self.standardDists:
+    #             orderdStandardDists.append(self.standardDists[nameOfNode])
 
-        self.joinedStandardDists = cp.J(*orderdStandardDists)
+    #     self.joinedStandardDists = cp.J(*orderdStandardDists)
 
     def __save__cpu_affinity(self):
         # Save cpu pinning: This is necessary, because through chaospy.generate_quadrature() -> scipy.linalg.eig_banded
