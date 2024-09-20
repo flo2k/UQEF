@@ -461,14 +461,11 @@ class UQsim(object):
                     print("calculate statistics [{}]...".format(type(self.statistic).__name__))
                 calculateStatistics = {
                     "mc"       : (lambda: self.statistic.calcStatisticsForMcParallel(
-                        chunksize=self.args.chunksize,
-                        regression=self.args.regression))
+                        chunksize=self.args.chunksize))
                     ,"sc"      : (lambda: self.statistic.calcStatisticsForScParallel(
-                        chunksize=self.args.chunksize,
-                        regression=self.args.regression))
+                        chunksize=self.args.chunksize))
                     ,"saltelli": (lambda: self.statistic.calcStatisticsForMcSaltelliParallel(
-                        chunksize=self.args.chunksize,
-                        regression=self.args.regression))
+                        chunksize=self.args.chunksize))
                     ,"ensemble": (lambda: self.statistic.calcStatisticsForEnsembleParallel(
                         chunksize=self.args.chunksize))
                 }

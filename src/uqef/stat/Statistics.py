@@ -31,15 +31,15 @@ class Statistics(object):
     def set_nodes(self, simulationNodes):
         pass
 
-    def prepareForMcStatistics(self, simulationNodes, numEvaluations, regression, order,
-                               poly_normed, poly_rule, *args, **kwargs):
+    def prepareForMcStatistics(self, simulationNodes, numEvaluations, regression=False, order=None,
+                               poly_normed=None, poly_rule=None, cross_truncation=1.0, *args, **kwargs):
         pass
 
-    def prepareForScStatistics(self, simulationNodes, order, poly_normed, poly_rule, *args, **kwargs):
+    def prepareForScStatistics(self, simulationNodes, order, poly_normed, poly_rule, regression=False, cross_truncation=1.0, *args, **kwargs):
         pass
 
-    def prepareForMcSaltelliStatistics(self, simulationNodes, numEvaluations, regression, order,
-                                       poly_normed, poly_rule, *args, **kwargs):
+    def prepareForMcSaltelliStatistics(self, simulationNodes, numEvaluations, regression=False, order=None, 
+                                        poly_normed=None, poly_rule=None, cross_truncation=1.0, *args, **kwargs):
         pass
 
     def calcStatisticsForMcParallel(self, chunksize=1, *args, **kwargs):
@@ -56,22 +56,28 @@ class Statistics(object):
         pass
 
     def calcStatisticsForMc(self, rawSamples, timesteps,
-                            simulationNodes, numEvaluations, order, regression, poly_normed, poly_rule, solverTimes,
-                            work_package_indexes, original_runtime_estimator=None, *args, **kwargs):
+                            simulationNodes, numEvaluations, order, regression, solverTimes,
+                            work_package_indexes, original_runtime_estimator, 
+                            poly_normed=None, poly_rule=None, cross_truncation=1.0,
+                            *args, **kwargs):
         pass
 
     def calcStatisticsForSc(self, rawSamples, timesteps,
-                            simulationNodes, order, regression, poly_normed, poly_rule, solverTimes,
-                            work_package_indexes, original_runtime_estimator=None, *args, **kwargs):
+                            simulationNodes, order, regression, solverTimes,
+                            work_package_indexes, original_runtime_estimator, 
+                            poly_normed=None, poly_rule=None, cross_truncation=1.0,
+                            *args, **kwargs):
         pass
 
     def calcStatisticsForMcSaltelli(self, rawSamples, timesteps,
-                                    simulationNodes, numEvaluations, order, regression, poly_normed, poly_rule, solverTimes,
-                                    work_package_indexes, original_runtime_estimator=None, *args, **kwargs):
+                                    simulationNodes, numEvaluations, order, regression, solverTimes,
+                                    work_package_indexes, original_runtime_estimator, 
+                                    poly_normed=None, poly_rule=None, cross_truncation=1.0,
+                                    *args, **kwargs):
         pass
 
-    def calcStatisticsForEnsemble(self, rawSamples, timesteps, simulationNodes, numEvaluations, solverTimes,
-                                  work_package_indexes, original_runtime_estimator=None, *args, **kwargs):
+    def calcStatisticsForEnsemble(self, rawSamples=None, timesteps=None, simulationNodes=None, numEvaluations=None, solverTimes=None,
+                                  work_package_indexes=None, original_runtime_estimator=None, *args, **kwargs):
         # self.calcStatisticsForMc(
         #     rawSamples=rawSamples, timesteps=timesteps, simulationNodes=simulationNodes, numEvaluations=numEvaluations,
         #     order=None, regression=False, poly_normed=None, poly_rule=None, solverTimes=solverTimes,
