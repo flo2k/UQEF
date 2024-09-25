@@ -35,6 +35,15 @@ class SaltelliSimulation(Simulation):
 
     def generateSimulationNodes(self, simulationNodes, read_nodes_from_file=False, parameters_file_name=None,
                                 parameters_setup_file_name=None):
+        """
+        Generate simulation nodes for Saltelli simulation
+        Important note about dimensionality of different numpy arrays:
+        - simulationNodes.distNodes.shape[0] should present a stochastic dimensionionality
+        - simulationNodes.distNodes is of shape (stochstic_dim, numEvaluations*2)
+        - simulationNodes.nodes is of shape (dim, numEvaluations*2)
+        - simulationNodes.parameters is of shape (dim, numEvaluations*2)
+        - self.parameters is of shape (numEvaluations*( stochastic dimensionionality + 2), dim)
+        """
         nodes, parameters = simulationNodes.generateNodesForMC(
             numSamples=self.numEvaluations * 2, rule=self.rule,
             read_nodes_from_file=read_nodes_from_file,
@@ -43,26 +52,26 @@ class SaltelliSimulation(Simulation):
         )
 
         if parameters is not None:
-            temp = parameters
+            original_set_of_parameters = parameters
         else:
-            temp = nodes
+            original_set_of_parameters = nodes
 
         self.nodes = nodes.T
 
-        d = simulationNodes.distNodes.shape[0]  # temp.shape[0]
-        N = self.numEvaluations  # (temp.shape)[1] should be 2*N
-        new_dim = N * (d + 2)
-        print(f"MC & Saltelli INFO: D is {d}, N is {N}, total number of calculations will be {new_dim}")
-        m1 = temp.T[:N].T  # m1.shape = (d,N)
-        m2 = temp.T[N:].T  # m2.shape = (d,N)
+        dim = simulationNodes.distNodes.shape[0]  # this should present a stochastic dimensionionality
+        N = self.numEvaluations  # (original_set_of_parameters.shape)[1] should be 2*N
+        total_number_model_evaluations = N * (dim + 2)
+        print(f"MC (Saltelli) INFO: D is {dim}, N is {N}, total number of calculations will be {total_number_model_evaluations}")
+        m1 = original_set_of_parameters.T[:N].T  # m1.shape = (dim,N)
+        m2 = original_set_of_parameters.T[N:].T  # m2.shape = (dim,N)
 
-        zeros = [0] * d
-        ones = [1] * d
+        zeros = [0] * dim
+        ones = [1] * dim
         matrix_A = self._get_matrix(matrix_A=m1, matrix_B=m2, indices=zeros)
         matrix_B = self._get_matrix(matrix_A=m1, matrix_B=m2, indices=ones)
-        matrix_A_B = np.concatenate([self._get_matrix(matrix_A=m1, matrix_B=m2, indices=index) for index in np.eye(d, dtype=bool)], axis=1)
+        matrix_A_B = np.concatenate([self._get_matrix(matrix_A=m1, matrix_B=m2, indices=index) for index in np.eye(dim, dtype=bool)], axis=1)
         self.parameters = np.concatenate([matrix_A, matrix_B, matrix_A_B], axis=1)
-        self.parameters = self.parameters.T  # should be in Saltelli's case N*(d+2) x d
+        self.parameters = self.parameters.T  # should be in Saltelli's case N*(dim+2) x dim
 
     def prepareStatistic(self, statistics, simulationNodes, original_runtime_estimator=None, *args, **kwargs):
         timesteps = self.solver.timesteps()
