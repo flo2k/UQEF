@@ -9,7 +9,8 @@ from .Simulation import Simulation
 
 class ScSimulation(Simulation):
     """
-    ScSimulation does a stochastic collocation simulation
+    ScSimulation does a pseudo spectra projection scheme (regression is set to False)
+     or stochastic collocation simulation (regression is set to True)
     """
 
     def __init__(self, solver, q_order, p_order, rule="G", sparse_quadrature=False, regression=False,
@@ -57,7 +58,7 @@ class ScSimulation(Simulation):
                            solverTimes=self.solver.solverTimes,
                            work_package_indexes=self.solver.work_package_indexes)
         statistics.prepareForScStatistics(
-            simulationNodes, self.p_order, self.poly_normed, self.poly_rule, cross_truncation=self.cross_truncation)
+            simulationNodes, self.p_order, self.poly_normed, self.poly_rule, self.regression, cross_truncation=self.cross_truncation)
 
     def calculateStatistics(self, statistics, simulationNodes, original_runtime_estimator=None, *args, **kwargs):
         model_results = self.solver.results
@@ -67,10 +68,10 @@ class ScSimulation(Simulation):
 
         statistics.calcStatisticsForSc(model_results, timesteps, simulationNodes, self.p_order,
                                        self.regression,
-                                       self.poly_normed,
-                                       self.poly_rule,
                                        solverTimes,
-                                       self.solver.work_package_indexes, self.original_runtime_estimator, *args, **kwargs)
+                                       self.solver.work_package_indexes, self.original_runtime_estimator,
+                                       poly_normed=self.poly_normed, poly_rule=self.poly_rule, cross_truncation=self.cross_truncation,
+                                       *args, **kwargs)
         
         return statistics  # TODO remove return?
 
