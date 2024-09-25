@@ -371,6 +371,8 @@ class UQsim(object):
             else:
                 self.simulation.generateSimulationNodes(self.simulationNodes)
 
+            #self.simulation.saveParametersToFile(self.args.outputResultDir + "/simulation_parameters")
+
             print("")
             print("Nodes setup:")
             print(self.simulationNodes.printNodesSetup())
@@ -550,6 +552,13 @@ class UQsim(object):
             if fileName is None:
                 fileName = self.simulation.name
             self.simulation.saveToFile(self.args.outputResultDir + "/" + fileName)
+
+    def save_simulation_parameters(self, fileName=None):
+        if self.is_master():
+            print("save simulation...")
+            if fileName is None:
+                fileName = "simulation_parameters"
+            self.simulation.saveParametersToFile(self.args.outputResultDir + "/" + fileName)
 
     def tear_down(self):
         if self.is_master():

@@ -8,6 +8,8 @@ from abc import abstractmethod
 from abc import ABCMeta
 
 import dill
+import numpy as np
+
 
 class Simulation(object):
     """
@@ -52,3 +54,8 @@ class Simulation(object):
         simFileName = fileName + '.sim'
         with open(simFileName, 'wb') as f:
             dill.dump(self, f)
+
+    def saveParametersToFile(self, fileName):
+        # save parameters used to stimulate the model in a file
+        paramFileName = fileName + '.npy'
+        np.save(paramFileName, self.parameters)
