@@ -133,9 +133,14 @@ class Nodes(object):
                 self.nodes_read_from_file = nodes_and_weights_array[:, :stochastic_dim].T
                 self.weights_read_from_file = nodes_and_weights_array[:, stochastic_dim]
                 # transform nodes and weight you have read from the file
+                # transform nodes and weight you have read from the file
                 self.distNodes, self.weights = self._transform_nodes_and_weights_read_from_file(
-                    parameters_setup_file_name, self._performTransformation, stochastic_dim
-                )
+                    nodes_read_from_file=self.nodes_read_from_file, 
+                    weights_read_from_file=self.weights_read_from_file,
+                    performTransformation=self._performTransformation, 
+                    stochastic_dim=stochastic_dim, 
+                    parameters_setup_file_name=parameters_setup_file_name
+                    )
                 self.numSamplesOrScDim = len(self.distNodes[0])
             else:
                 if self._performTransformation:
@@ -208,23 +213,21 @@ class Nodes(object):
                 self.weights_read_from_file = nodes_and_weights_array[:, stochastic_dim]
                 # transform nodes and weight you have read from the file
                 self.distNodes, self.weights = self._transform_nodes_and_weights_read_from_file(
-                    parameters_setup_file_name, self._performTransformation, stochastic_dim
-                )
+                    nodes_read_from_file=self.nodes_read_from_file, 
+                    weights_read_from_file=self.weights_read_from_file,
+                    performTransformation=self._performTransformation, 
+                    stochastic_dim=stochastic_dim, 
+                    parameters_setup_file_name=parameters_setup_file_name
+                    )
                 # TODO Update self.numSamplesOrScDim based on what is read from file!
                 self.numSamplesOrScDim = numCollocationPointsPerDim
             else:
                 if self._performTransformation:
-                    self.distNodes, self.weights = cp.generate_quadrature(numCollocationPointsPerDim,
-                                                                          self.joinedStandardDists,
-                                                                          rule=rule,
-                                                                          growth=growth,
-                                                                          sparse=sparse)
+                    dist_for_quadrature = self.joinedStandardDists
                 else:
-                    self.distNodes, self.weights = cp.generate_quadrature(numCollocationPointsPerDim,
-                                                                          self.joinedDists,
-                                                                          rule=rule,
-                                                                          growth=growth,
-                                                                          sparse=sparse)
+                    dist_for_quadrature = self.joinedDists
+                self.distNodes, self.weights = cp.generate_quadrature(
+                    numCollocationPointsPerDim, dist_for_quadrature, rule=rule,growth=growth, sparse=sparse)
 
             self.__restore__cpu_affinity()
 
@@ -247,7 +250,6 @@ class Nodes(object):
         self.weights = np.array(self.weights)
 
         if self._performTransformation:
-            # self.parameters = self.transformParameters(orderdDistsNames, self.nodes)
             self.parameters = Nodes.transformSamples(self.nodes, self.joinedStandardDists, self.joinedDists)
         else:
             self.parameters = self.nodes
@@ -355,14 +357,18 @@ class Nodes(object):
 
         return _a + _b * samples
 
-    def _transform_nodes_and_weights_read_from_file(self, parameters_setup_file_name, performTransformation, stochastic_dim):
+    def _transform_nodes_and_weights_read_from_file(
+        self, nodes_read_from_file, weights_read_from_file, 
+        performTransformation, stochastic_dim, parameters_setup_file_name=None):
         """
         Important function when reading position of the nodes from some file. Ensure that these nodes are distributed
         according to desired distribution specified in the configuration file.
 
-        :param parameters_setup_file_name: From this file we read a setup/distribution according to which the read nodes are distributed
-        :param performTransformation:
+        :nodes_read_from_file: Nodes read from file
+        :param performTransformation: If True, then the nodes are transformed to the desired 'standard' distribution
+        and just later on the parameters used to stimulate the model are transformed to the desired 'user-defined' distribution
         :param stochastic_dim:
+        :param parameters_setup_file_name: From this file we read a setup/distribution according to which the read nodes are distributed
         :return:
         """
         distsOfNodesFromFile = []
@@ -386,36 +392,13 @@ class Nodes(object):
 
         if performTransformation:
             distNodes = Nodes.transformSamples(
-                self.nodes_read_from_file, jointDistOfNodesFromFile, self.joinedStandardDists)
-            weights = self.weights_read_from_file
+                nodes_read_from_file, jointDistOfNodesFromFile, self.joinedStandardDists)
+            weights = weights_read_from_file
         else:
             distNodes = Nodes.transformSamples(
-                self.nodes_read_from_file, jointDistOfNodesFromFile, self.joinedDists)
-            weights = self.weights_read_from_file
+                nodes_read_from_file, jointDistOfNodesFromFile, self.joinedDists)
+            weights = weights_read_from_file
         return distNodes, weights
-
-    # note: delete this eventually - not used
-    # def _update_standardDists_and_joinedStandardDists(self, parameters_setup_file_name):
-    #     with open(parameters_setup_file_name) as f:
-    #         parameters_configuration_object = json.load(f)
-
-    #     for parameter_config in parameters_configuration_object["parameters"]:
-    #         # node values and distributions -> automatically maps dists and their parameters by reflection mechanisms
-    #         cp_dist_signature = inspect.signature(getattr(cp, parameter_config["distribution"]))
-    #         dist_parameters_values = []
-    #         for p in cp_dist_signature.parameters:
-    #             dist_parameters_values.append(parameter_config[p])
-    #         self.assertNodeName(parameter_config["name"])
-    #         self.standardDists[parameter_config["name"]] = getattr(cp, parameter_config["distribution"])(
-    #             *dist_parameters_values)
-
-    #     orderdStandardDists = []
-    #     for i in range(0, len(self.nodeNames)):
-    #         nameOfNode = self.nodeNames[i]
-    #         if nameOfNode in self.standardDists:
-    #             orderdStandardDists.append(self.standardDists[nameOfNode])
-
-    #     self.joinedStandardDists = cp.J(*orderdStandardDists)
 
     def __save__cpu_affinity(self):
         # Save cpu pinning: This is necessary, because through chaospy.generate_quadrature() -> scipy.linalg.eig_banded
