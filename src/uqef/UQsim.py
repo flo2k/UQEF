@@ -557,6 +557,9 @@ class UQsim(object):
                 fileName = "simulation_parameters"
             self.simulation.saveParametersToFile(self.args.outputResultDir + "/" + fileName)
 
+    def get_simulation_parameters_shape(self):
+        return self.simulation.get_simulation_parameters_shape()
+
     def tear_down(self):
         if self.is_master():
             self.store_to_file()

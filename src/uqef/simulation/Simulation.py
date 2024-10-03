@@ -59,3 +59,6 @@ class Simulation(object):
         # save parameters used to stimulate the model in a file
         paramFileName = fileName + '.npy'
         np.save(paramFileName, self.parameters)
+
+    def get_simulation_parameters_shape(self):
+        return self.parameters.shape
