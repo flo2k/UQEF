@@ -56,9 +56,14 @@ class Simulation(object):
             dill.dump(self, f)
 
     def saveParametersToFile(self, fileName):
-        # save parameters used to stimulate the model in a file
-        paramFileName = fileName + '.npy'
-        np.save(paramFileName, self.parameters)
+        """
+        This function saves parameters used to stimulate the model in a file
+        """
+        if hasattr(self, 'parameters') and self.parameters is not None:
+            paramFileName = fileName + '.npy'
+            np.save(paramFileName, self.parameters)
+        else:
+            print("No parameters to save")
 
     def get_simulation_parameters_shape(self):
         return self.parameters.shape
