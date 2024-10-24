@@ -58,7 +58,7 @@ class ScSimulation(Simulation):
                            solverTimes=self.solver.solverTimes,
                            work_package_indexes=self.solver.work_package_indexes)
         statistics.prepareForScStatistics(
-            simulationNodes, self.p_order, self.poly_normed, self.poly_rule, self.regression, cross_truncation=self.cross_truncation)
+            simulationNodes, self.p_order, self.poly_normed, self.poly_rule, self.regression, cross_truncation=self.cross_truncation, *args, **kwargs)
 
     def calculateStatistics(self, statistics, simulationNodes, original_runtime_estimator=None, *args, **kwargs):
         model_results = self.solver.results

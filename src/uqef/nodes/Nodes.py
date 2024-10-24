@@ -165,7 +165,7 @@ class Nodes(object):
                     nodes.append(self.distNodes[orderdDistsNames.index(nameOfNode)])
 
         self.nodes = np.array(nodes)
-        self.weights = np.array(self.weights)  # MC has no weights, but after generation, we want a array
+        self.weights = np.array(self.weights)  # MC has no weights, but after generation, we want an array
 
         if self._performTransformation:
             # self.parameters = self.transformParameters(orderdDistsNames, self.nodes)

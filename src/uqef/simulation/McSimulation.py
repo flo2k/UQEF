@@ -54,7 +54,7 @@ class McSimulation(Simulation):
                            work_package_indexes=self.solver.work_package_indexes)
         statistics.prepareForMcStatistics(
             simulationNodes, self.numEvaluations, self.regression, self.p_order, 
-            self.poly_normed, self.poly_rule, cross_truncation=self.cross_truncation)
+            self.poly_normed, self.poly_rule, cross_truncation=self.cross_truncation, *args, **kwargs)
 
     def calculateStatistics(self, statistics, simulationNodes, original_runtime_estimator=None, *args, **kwargs):
         model_results = self.solver.results
