@@ -449,11 +449,12 @@ class UQsim(object):
                 if self.is_master():
                     self.simulation.prepareStatistic(self.statistic, self.simulationNodes)
                     print("preparing statistics [{}]...".format(type(self.statistic).__name__))
-            elif self.is_master():
-                print("create statistics object for the [{}] model".format(self.args.model))
-                self.statistic = self.statistics[self.args.model]()
-                self.simulation.prepareStatistic(self.statistic, self.simulationNodes)
-                print("preparing statistics [{}]...".format(type(self.statistic).__name__))
+            else:
+                if self.is_master():
+                    print("create statistics object for the [{}] model".format(self.args.model))
+                    self.statistic = self.statistics[self.args.model]()
+                    self.simulation.prepareStatistic(self.statistic, self.simulationNodes)
+                    print("preparing statistics [{}]...".format(type(self.statistic).__name__))
 
     def calc_statistics(self, **kwargs):
         if self.args.disable_statistics is False and self.args.disable_calc_statistics \
