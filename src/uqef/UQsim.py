@@ -281,7 +281,7 @@ class UQsim(object):
                             # for numerical stability work with nodes from 'standard' distributions,
                             # and use parameters for forcing the model
                             if parameter_config["distribution"] == "Uniform":
-                                if self.args.uq_method == "sc":  # Gauss–Legendre quadrature
+                                if (self.args.uq_method == "sc") or (self.args.uq_method == "mc" and self.args.regression):  # Gauss–Legendre quadrature
                                     self.simulationNodes.setStandardDist(parameter_config["name"],
                                                                          getattr(cp, parameter_config["distribution"])(
                                                                              lower=-1, upper=1
