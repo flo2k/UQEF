@@ -101,6 +101,27 @@ class Nodes(object):
         distNodeNames = [nodeName for nodeName in self.nodeNames if nodeName in self.dists]
         return distNodeNames
 
+    def set_joined_dists(self):
+        orderdDists = []
+        orderdDistsNames = []
+        orderdStandardDists = []
+        for i in range(0, len(self.nodeNames)):
+            nameOfNode = self.nodeNames[i]
+            if nameOfNode in self.dists:
+                orderdDists.append(self.dists[nameOfNode])
+                orderdDistsNames.append(nameOfNode)
+                if self._performTransformation:
+                    orderdStandardDists.append(self.standardDists[nameOfNode])
+        if len(self.dists) > 0 and orderdDists:
+            self.joinedDists = cp.J(*orderdDists)
+            if self._performTransformation and orderdStandardDists:
+                self.joinedStandardDists = cp.J(*orderdStandardDists)
+            else:
+                self.joinedStandardDists = None
+        else:
+            self.joinedDists = None
+            self.joinedStandardDists = None
+
     def generateNodesForMC(self, numSamples, rule="R", read_nodes_from_file=False, parameters_file_name=None,
                            parameters_setup_file_name=None):
         if self.numSamplesOrScDim == numSamples:
@@ -128,11 +149,10 @@ class Nodes(object):
             if self._performTransformation:
                 self.joinedStandardDists = cp.J(*orderdStandardDists)
 
-            if read_nodes_from_file:
+            if read_nodes_from_file and parameters_file_name is not None:
                 nodes_and_weights_array = np.loadtxt(parameters_file_name, delimiter=',')
                 self.nodes_read_from_file = nodes_and_weights_array[:, :stochastic_dim].T
                 self.weights_read_from_file = nodes_and_weights_array[:, stochastic_dim]
-                # transform nodes and weight you have read from the file
                 # transform nodes and weight you have read from the file
                 self.distNodes, self.weights = self._transform_nodes_and_weights_read_from_file(
                     nodes_read_from_file=self.nodes_read_from_file, 
@@ -207,7 +227,7 @@ class Nodes(object):
 
             stochastic_dim = len(orderdDists)  # len(list(self.dists.keys()))
 
-            if read_nodes_from_file:
+            if read_nodes_from_file and parameters_file_name is not None:
                 nodes_and_weights_array = np.loadtxt(parameters_file_name, delimiter=',')
                 self.nodes_read_from_file = nodes_and_weights_array[:, :stochastic_dim].T
                 self.weights_read_from_file = nodes_and_weights_array[:, stochastic_dim]
@@ -227,7 +247,7 @@ class Nodes(object):
                 else:
                     dist_for_quadrature = self.joinedDists
                 self.distNodes, self.weights = cp.generate_quadrature(
-                    numCollocationPointsPerDim, dist_for_quadrature, rule=rule,growth=growth, sparse=sparse)
+                    numCollocationPointsPerDim, dist_for_quadrature, rule=rule, growth=growth, sparse=sparse)
 
             self.__restore__cpu_affinity()
 
