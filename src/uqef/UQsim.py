@@ -124,6 +124,7 @@ class UQsim(object):
         self.parser.add_argument('--sc_poly_normed'            , action='store_true', default=False)
         self.parser.add_argument('--sc_poly_rule'              , default="three_terms_recurrence") # "gram_schmidt" | "three_terms_recurrence" | "cholesky"
         self.parser.add_argument('--cross_truncation'          , type=float, default=1.0)
+        self.parser.add_argument('--regression_model_type'     , type=str, default=None)  # None | "OLS" | "LARS"
         self.parser.add_argument('--sampling_rule'             , default='random')  # "sobol" | "latin_hypercube" | "halton"  | "hammersley"
         self.parser.add_argument('--transformToStandardDist'   , action='store_true', default=False)
         self.parser.add_argument('--sampleFromStandardDist'    , action='store_true', default=False)
@@ -164,6 +165,9 @@ class UQsim(object):
 
     def is_master(self):
         return self.args.mpi is False or (self.args.mpi is True and rank == 0)
+
+    def get_size(self):
+        return size
 
     def is_restored(self):
         return self.__restored
@@ -333,7 +337,8 @@ class UQsim(object):
                     self.args.regression,
                     self.args.sc_poly_normed,
                     self.args.sc_poly_rule,
-                    cross_truncation=self.args.cross_truncation))
+                    cross_truncation=self.args.cross_truncation,
+                    regression_model_type=self.args.regression_model_type))
                 , "sc"      : (lambda: uqef.simulation.ScSimulation(
                     self.solver,
                     self.args.sc_q_order,
@@ -343,7 +348,8 @@ class UQsim(object):
                     self.args.regression,
                     self.args.sc_poly_normed,
                     self.args.sc_poly_rule,
-                    cross_truncation=self.args.cross_truncation))
+                    cross_truncation=self.args.cross_truncation,
+                    regression_model_type=self.args.regression_model_type))
                 , "saltelli": (lambda: uqef.simulation.SaltelliSimulation(
                     self.solver,
                     self.args.mc_numevaluations,
