@@ -32,10 +32,10 @@ class Statistics(object):
         pass
 
     def prepareForMcStatistics(self, simulationNodes, numEvaluations, regression=False, order=None,
-                               poly_normed=None, poly_rule=None, cross_truncation=1.0, *args, **kwargs):
+                               poly_normed=None, poly_rule=None, cross_truncation=1.0, regression_model_type=None, *args, **kwargs):
         pass
 
-    def prepareForScStatistics(self, simulationNodes, order, poly_normed, poly_rule, regression=False, cross_truncation=1.0, *args, **kwargs):
+    def prepareForScStatistics(self, simulationNodes, order, poly_normed, poly_rule, regression=False, cross_truncation=1.0, regression_model_type=None, *args, **kwargs):
         pass
 
     def prepareForMcSaltelliStatistics(self, simulationNodes, numEvaluations, regression=False, order=None, 
@@ -58,14 +58,14 @@ class Statistics(object):
     def calcStatisticsForMc(self, rawSamples, timesteps,
                             simulationNodes, numEvaluations, order, regression, solverTimes,
                             work_package_indexes, original_runtime_estimator, 
-                            poly_normed=None, poly_rule=None, cross_truncation=1.0,
+                            poly_normed=None, poly_rule=None, cross_truncation=1.0, regression_model=None,
                             *args, **kwargs):
         pass
 
     def calcStatisticsForSc(self, rawSamples, timesteps,
                             simulationNodes, order, regression, solverTimes,
                             work_package_indexes, original_runtime_estimator, 
-                            poly_normed=None, poly_rule=None, cross_truncation=1.0,
+                            poly_normed=None, poly_rule=None, cross_truncation=1.0, regression_model=None,
                             *args, **kwargs):
         pass
 

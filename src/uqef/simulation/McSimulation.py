@@ -23,6 +23,7 @@ class McSimulation(Simulation):
         self.poly_normed = poly_normed
         self.poly_rule = poly_rule
         self.cross_truncation = kwargs.get("cross_truncation", 1.0)
+        self.regression_model_type = kwargs.get("regression_model_type", None)
 
         self.parameters = None
         self.nodes = None
@@ -54,7 +55,7 @@ class McSimulation(Simulation):
                            work_package_indexes=self.solver.work_package_indexes)
         statistics.prepareForMcStatistics(
             simulationNodes, self.numEvaluations, self.regression, self.p_order, 
-            self.poly_normed, self.poly_rule, cross_truncation=self.cross_truncation, *args, **kwargs)
+            self.poly_normed, self.poly_rule, cross_truncation=self.cross_truncation, regression_model_type=self.regression_model_type, *args, **kwargs)
 
     def calculateStatistics(self, statistics, simulationNodes, original_runtime_estimator=None, *args, **kwargs):
         model_results = self.solver.results
