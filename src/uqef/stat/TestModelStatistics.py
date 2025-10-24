@@ -37,7 +37,8 @@ class TestModelStatistics(Statistics):
                             simulationNodes, numEvaluations, order,
                             regression,
                             solverTimes,
-                            work_package_indexes, original_runtime_estimator):
+                            work_package_indexes, original_runtime_estimator,
+                            *args, **kwargs):
         self.timesteps = timesteps
         self.numTimeSteps = len(self.timesteps)
         samples = Samples(rawSamples, self.numTimeSteps)
@@ -45,7 +46,7 @@ class TestModelStatistics(Statistics):
         if regression:
             nodes = simulationNodes.distNodes
             dist = simulationNodes.joinedDists
-            P = cp.orth_ttr(order, dist)
+            P = cp.expansion.stieltjes(order, dist)
             self.qoi_gPCE = cp.fit_regression(P, nodes, samples.voi)
             self.calc_stats_for_gPCE(dist)
         else:
@@ -68,8 +69,9 @@ class TestModelStatistics(Statistics):
             self.StdDev_qoi = np.sqrt(self.Var_qoi)
 
     def calcStatisticsForSc(self, rawSamples, timesteps,
-                            simulationNodes, order, regression, solverTimes,
-                            work_package_indexes, original_runtime_estimator):
+                            simulationNodes, order, regression, poly_normed, poly_rule,
+                            solverTimes, work_package_indexes, original_runtime_estimator,
+                            *args, **kwargs):
         nodes = simulationNodes.distNodes
         weights = simulationNodes.weights
         dist = simulationNodes.joinedDists
@@ -79,7 +81,7 @@ class TestModelStatistics(Statistics):
 
         samples = Samples(rawSamples, self.numTimeSteps)
 
-        P = cp.orth_ttr(order, dist)
+        P = cp.expansion.stieltjes(order, dist)
 
         if regression:
             self.qoi_gPCE = cp.fit_regression(P, nodes, samples.voi)
@@ -118,7 +120,8 @@ class TestModelStatistics(Statistics):
 
     def calcStatisticsForSaltelli(self, rawSamples, timesteps,
                             simulationNodes, numEvaluations, order, regression, solverTimes,
-                            work_package_indexes, original_runtime_estimator=None):
+                            work_package_indexes, original_runtime_estimator=None,
+                            *args, **kwargs):
         # TODO: do some tests with separate implementation of Saltelli stats
         self.calcStatisticsForMc(rawSamples, timesteps,
                             simulationNodes, numEvaluations, order, regression, solverTimes,
@@ -144,7 +147,7 @@ class TestModelStatistics(Statistics):
         #####################################
 
         figure = plotter.figure(1, figsize=(13, 10))
-        figure.canvas.set_window_title('TestModel statistics')
+        figure.canvas.manager.set_window_title('TestModel statistics')
 
         plotter.subplot(311)
         # plotter.title('mean')

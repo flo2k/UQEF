@@ -9,6 +9,7 @@ import dill
 import numpy as np
 import sys
 
+dill.settings['recurse'] = True
 
 class Statistics(object):
     """

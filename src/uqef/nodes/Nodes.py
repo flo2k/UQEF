@@ -228,7 +228,7 @@ class Nodes(object):
 
         #figure setup
         figure = plotter.figure(1, figsize=(6.5, 5))
-        figure.canvas.set_window_title('simuluation node setup')
+        figure.canvas.manager.set_window_title('simuluation node setup')
 
         dists = self.dists
         counter = 1
