@@ -69,9 +69,10 @@ class ScSimulation(Simulation):
 
         statistics.calcStatisticsForSc(model_results, timesteps, simulationNodes, self.p_order,
                                        self.regression,
+                                       self.poly_normed, self.poly_rule,
                                        solverTimes,
                                        self.solver.work_package_indexes, self.original_runtime_estimator,
-                                       poly_normed=self.poly_normed, poly_rule=self.poly_rule, cross_truncation=self.cross_truncation,
+                                       cross_truncation=self.cross_truncation,
                                        *args, **kwargs)
         
         return statistics  # TODO remove return?

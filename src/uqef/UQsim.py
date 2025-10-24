@@ -463,6 +463,8 @@ class UQsim(object):
                     print("preparing statistics [{}]...".format(type(self.statistic).__name__))
 
     def calc_statistics(self, **kwargs):
+        if self.statistic is None:
+            self.prepare_statistics()
         if self.args.disable_statistics is False and self.args.disable_calc_statistics \
                 is False and self.args.disable_recalc_statistics is False:
             if self.args.mpi is True and self.args.parallel_statistics is True:

@@ -56,13 +56,13 @@ class MpiSolver(Solver):
         self.normaliseParams = normaliseParams
         self.combinedParallel = combinedParallel
 
-        if self.rank == 0:
-            self.infoModel = model_generator()
-
         self.size = MPI.COMM_WORLD.Get_size()
         self.rank = MPI.COMM_WORLD.Get_rank()
         self.name = MPI.Get_processor_name()
         self.version = MPI.Get_library_version()
+
+        if self.rank == 0:
+            self.infoModel = model_generator()
 
         self.numCores = num_cores
         print("rank {} uses numCores: {}".format(self.rank, self.numCores))
