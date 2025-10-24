@@ -484,6 +484,7 @@ class UQsim(object):
                 self.simulation.calculateStatistics(
                     self.statistic, self.simulationNodes, self.runtime_estimator, **kwargs)
 
+            if self.is_master():
                 if self.args.analyse_runtime is True and self.args.model == "runtime":
                     self.runtime_statistic = self.statistic
                 elif self.args.analyse_runtime is True:
