@@ -538,7 +538,13 @@ class UQsim(object):
     def save_statistics(self, **kwargs):
         if self.is_master() and self.args.disable_statistics is False:
             print("save statistics...")
-            fileName = kwargs.get('fileName') if 'fileName' in kwargs else self.simulation.name
+
+            fileName=None
+            if 'fileName' in kwargs:
+                fileName = kwargs.get('fileName')
+            if fileName is None:
+                fileName = self.simulation.name
+
             self.statistic.saveToFile(fileName=fileName, directory=self.args.outputResultDir, **kwargs)
             # self.statistics.saveAsNetCdf(timesteps=statistics.timesteps, fileName=fileName, directory=outputResultDir)
             # self.statistics.printCsv(fileName=fileName, directory=outputResultDir)

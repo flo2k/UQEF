@@ -51,7 +51,8 @@ class RuntimeStatistics(Statistics):
 
     def calcStatisticsForMc(self, rawSamples, timesteps,
                             simulationNodes, numEvaluations, order, regression, solverTimes,
-                            work_package_indexes, original_runtime_estimator=None, *args, **kwargs):
+                            work_package_indexes, original_runtime_estimator=None,
+                            *args, **kwargs):
         self.timesteps = timesteps
         self.numTimeSteps = len(self.timesteps)
         self.solverTimes = solverTimes
@@ -60,7 +61,7 @@ class RuntimeStatistics(Statistics):
         if regression:
             nodes = simulationNodes.distNodes
             dist = simulationNodes.joinedDists
-            P = cp.orth_ttr(order, dist)
+            P = cp.expansion.stieltjes(order, dist)
             self.GPCe_runtime = cp.fit_regression(P, nodes, samples.runtime)
             self.calc_stats_for_gPCE(dist)
         else:
@@ -85,7 +86,7 @@ class RuntimeStatistics(Statistics):
             #qoi dists
             self.qoi_dist_sampling = np.linspace(5, 45, 10**4, endpoint=True)
 
-            qoi_dist_runtime = cp.SampleDist(samples.runtime)
+            qoi_dist_runtime = cp.GaussianKDE(samples.runtime)
 
             self.qoi_dist_runtime_pdf = np.zeros((len(self.qoi_dist_sampling)))
             self.qoi_dist_runtime_pdf = qoi_dist_runtime.pdf(self.qoi_dist_sampling)
@@ -94,8 +95,9 @@ class RuntimeStatistics(Statistics):
         self.real_runtime = samples.runtime.copy()
 
     def calcStatisticsForSc(self, rawSamples, timesteps,
-                            simulationNodes, order, regression, solverTimes,
-                            work_package_indexes, original_runtime_estimator=None, *args, **kwargs):
+                            simulationNodes, order, regression, poly_normed, poly_rule,
+                            solverTimes, work_package_indexes, original_runtime_estimator=None,
+                            *args, **kwargs):
         nodes = simulationNodes.distNodes
         weights = simulationNodes.weights
         dist = simulationNodes.joinedDists
@@ -106,7 +108,7 @@ class RuntimeStatistics(Statistics):
         
         samples = Samples(self.solverTimes.T_i_S, self.numTimeSteps)
         
-        P = cp.orth_ttr(order, dist)
+        P = cp.expansion.stieltjes(order, dist)
 
         if regression:
             self.GPCe_runtime = cp.fit_regression(P, nodes, samples.runtime)
@@ -234,8 +236,9 @@ class RuntimeStatistics(Statistics):
         self.Sobol_t_runtime = cp.Sens_t(self.GPCe_runtime, dist)
 
     def calcStatisticsForMcSaltelli(self, rawSamples, timesteps,
-                                    simulationNodes, numEvaluations, order, regression, solverTimes,
-                                    work_package_indexes, original_runtime_estimator=None, *args, **kwargs):
+                            simulationNodes, numEvaluations, order, regression, solverTimes,
+                            work_package_indexes, original_runtime_estimator=None,
+                            *args, **kwargs):
         # TODO: do some tests with separate implementation of Saltelli stats
         self.calcStatisticsForMc(rawSamples, timesteps,
                             simulationNodes, numEvaluations, order, regression, solverTimes,
@@ -265,24 +268,25 @@ class RuntimeStatistics(Statistics):
 
         if hasattr(self, "estimated_runtime") and hasattr(self, "estimated_runtime") and hasattr(self, "original_estimated_runtime"):
             resultTable = []
-            resultTable.append(["sum(T_i_S)",     self.real_runtime.sum(), self.estimated_runtime.sum(), self.original_estimated_runtime.sum(), (self.real_runtime.sum() - self.estimated_runtime.sum()), (self.real_runtime.sum() - self.original_estimated_runtime.sum())])
+            #resultTable.append(["sum(T_i_S)",     self.real_runtime.sum(), self.estimated_runtime.sum(), self.original_estimated_runtime.sum(), (self.real_runtime.sum() - self.estimated_runtime.sum()), (self.real_runtime.sum() - self.original_estimated_runtime.sum())])
 
-            resultTable.append(["T_i_SWP_worker", self.T_i_SWP_worker, self.ET_i_SWP_worker, self.OET_i_SWP_worker, (self.T_i_SWP_worker - self.ET_i_SWP_worker), (self.T_i_SWP_worker - self.OET_i_SWP_worker)])
-            resultTable.append(["T_SWP_worker"  , self.T_SWP_worker  , self.ET_SWP_worker  , self.OET_SWP_worker  , (self.T_SWP_worker - self.ET_SWP_worker)    , (self.T_SWP_worker - self.OET_SWP_worker)    ])
-            resultTable.append(["T_Prop"        , self.T_Prop        , self.ET_Prop        , self.OET_Prop        , (self.T_Prop - self.ET_Prop)                , (self.T_Prop - self.OET_Prop)                ])
-            resultTable.append(["T_I"           , self.T_I           , self.ET_I           , self.OET_I           , (self.T_I - self.ET_I)                      , (self.T_I - self.OET_I)                      ])
-            resultTable.append(["T_C"           , self.T_C           , self.ET_C           , self.OET_C           , (self.T_C - self.ET_C)                      , (self.T_C - self.OET_C)                      ])
-            resultTable.append(["T_S_overhead"  , self.T_S_overhead  , self.ET_S_overhead  , self.OET_S_overhead  , (self.T_S_overhead - self.ET_S_overhead)    , (self.T_S_overhead - self.OET_S_overhead)    ])
+            resultTable.append(["T_i_SWP_worker", self.T_i_SWP_worker.tolist(), self.ET_i_SWP_worker.tolist(), self.OET_i_SWP_worker.tolist(), (self.T_i_SWP_worker - self.ET_i_SWP_worker).tolist(), (self.T_i_SWP_worker - self.OET_i_SWP_worker).tolist()])
+            resultTable.append(["T_SWP_worker"  , self.T_SWP_worker.tolist()  , self.ET_SWP_worker.tolist()  , self.OET_SWP_worker.tolist()  , (self.T_SWP_worker - self.ET_SWP_worker).tolist()    , (self.T_SWP_worker - self.OET_SWP_worker).tolist()    ])
+            resultTable.append(["T_Prop"        , self.T_Prop.tolist()        , self.ET_Prop.tolist()        , self.OET_Prop.tolist()        , (self.T_Prop - self.ET_Prop).tolist()                , (self.T_Prop - self.OET_Prop).tolist()                ])
+            resultTable.append(["T_I"           , self.T_I.tolist()           , self.ET_I.tolist()           , self.OET_I.tolist()           , (self.T_I - self.ET_I).tolist()                      , (self.T_I - self.OET_I).tolist()                      ])
+            resultTable.append(["T_C"           , self.T_C                    , self.ET_C                    , self.OET_C                    , (self.T_C - self.ET_C)                               , (self.T_C - self.OET_C)                               ])
+            resultTable.append(["T_S_overhead"  , self.T_S_overhead           , self.ET_S_overhead           , self.OET_S_overhead           , (self.T_S_overhead - self.ET_S_overhead)             , (self.T_S_overhead - self.OET_S_overhead)             ])
 
             string += tabulate(resultTable, headers=["type", "runtime", "estimated", "org_estimated", "diff: T-E", "diff: T-OE"], floatfmt="f") + "\n"
+
             string += "\n"
 
         if hasattr(self, "estimated_runtime"):
             resultTable = []
-            resultTable.append(["aboslute error min"    , self.ET_i_S_errors_min    , self.OET_i_S_errors_min])
-            resultTable.append(["aboslute error max"    , self.ET_i_S_errors_max    , self.OET_i_S_errors_max])
-            resultTable.append(["aboslute error mean"   , self.ET_i_S_errors_mean   , self.OET_i_S_errors_mean])
-            resultTable.append(["aboslute error l2 norm", self.ET_i_S_errors_l2_norm, self.OET_i_S_errors_l2_norm])
+            resultTable.append(["absolute error min"    , self.ET_i_S_errors_min    , self.OET_i_S_errors_min])
+            resultTable.append(["absolute error max"    , self.ET_i_S_errors_max    , self.OET_i_S_errors_max])
+            resultTable.append(["absolute error mean"   , self.ET_i_S_errors_mean   , self.OET_i_S_errors_mean])
+            resultTable.append(["absolute error l2 norm", self.ET_i_S_errors_l2_norm, self.OET_i_S_errors_l2_norm])
             resultTable.append(["relative error min",     self.ET_i_S_errors_rel_min,     self.OET_i_S_errors_rel_min])
             resultTable.append(["relative error max",     self.ET_i_S_errors_rel_max,     self.OET_i_S_errors_rel_max])
             resultTable.append(["relative error mean",    self.ET_i_S_errors_rel_mean,    self.OET_i_S_errors_rel_mean])
@@ -325,10 +329,10 @@ class RuntimeStatistics(Statistics):
         # #####################################
         #
         # figure = plotter.figure(1, figsize=(13,5))
-        # figure.canvas.set_window_title('UQ: Train Station')
+        # figure.canvas.manager.set_window_title('UQ: Train Station')
         #
         # figure = plotter.figure(1, figsize=(18, 5))
-        # figure.canvas.set_window_title('UQ: Pedestrian Evacuation (Vadere)')
+        # figure.canvas.manager.set_window_title('UQ: Pedestrian Evacuation (Vadere)')
         #
         # plotter.subplot(131)
         # # plotter.title('mean')
@@ -393,7 +397,7 @@ class RuntimeStatistics(Statistics):
 
         if hasattr(self, "qoi_dist_runtime_pdf"):
             figure = plotter.figure(1, figsize=(12, 4))
-            figure.canvas.set_window_title('UQ: Pedestrian Evacuation (Vadere)')
+            figure.canvas.manager.set_window_title('UQ: Pedestrian Evacuation (Vadere)')
 
             # qoi_dist
             plotter.subplot(111)
@@ -428,7 +432,7 @@ class RuntimeStatistics(Statistics):
         #####################################
 
         figure = plotter.figure(1, figsize=(6, 4))
-        figure.canvas.set_window_title('UQ: runtime')
+        figure.canvas.manager.set_window_title('UQ: runtime')
 
         fontsize = 15
         plotter.rc('font', family='serif', size=fontsize)
@@ -462,7 +466,7 @@ class RuntimeStatistics(Statistics):
         #####################################
         if hasattr(self, "original_estimated_runtime"):
             figure = plotter.figure(1, figsize=(6, 4))
-            figure.canvas.set_window_title('UQ: runtime')
+            figure.canvas.manager.set_window_title('UQ: runtime')
 
             fontsize = 15
             plotter.rc('font', family='serif', size=fontsize)
@@ -470,9 +474,9 @@ class RuntimeStatistics(Statistics):
             # runtime as it is
             ax = plotter.subplot(111)
 
-            ax.set_title("(b) Predicted runtime $\mathbb{T}^i_S$")
+            ax.set_title(r"(b) Predicted runtime $\mathbb{T}^i_S$")
             ax.plot(np.arange(1, len(self.real_runtime) + 1), self.real_runtime, 'o', markerfacecolor="w", label="$T^i_S$ (real)")
-            ax.plot(np.arange(1, len(self.original_estimated_runtime) + 1), self.original_estimated_runtime, 'go', label="$\mathbb{T}^i_S$ (predicted)")
+            ax.plot(np.arange(1, len(self.original_estimated_runtime) + 1), self.original_estimated_runtime, 'go', label=r"$\mathbb{T}^i_S$ (predicted)")
             # plotter.plot(np.sort(self.real_runtime), 'o', label="real runtime")
             # plotter.plot(np.sort(self.estimated_runtime), 'go', label="predicted runtime")
             plotter.xlabel('collocation points ($z_i$)')
@@ -499,7 +503,7 @@ class RuntimeStatistics(Statistics):
         #####################################
         if hasattr(self, "original_estimated_runtime"):
             figure = plotter.figure(1, figsize=(12, 4))
-            figure.canvas.set_window_title('UQ: runtime')
+            figure.canvas.manager.set_window_title('UQ: runtime')
 
             fontsize = 15
             plotter.rcParams.update({'font.size': fontsize})
@@ -518,9 +522,9 @@ class RuntimeStatistics(Statistics):
             # sorted runtime
             ax = figure.add_subplot(122)
 
-            plotter.title("(b) Predicted runtime $\mathbb{T}^i_S$")
+            plotter.title(r"(b) Predicted runtime $\mathbb{T}^i_S$")
             plotter.plot(np.arange(1, len(self.real_runtime)+1), self.real_runtime, 'o', markerfacecolor="w", label="$T^i_S$ (real)")
-            plotter.plot(np.arange(1, len(self.original_estimated_runtime)+1), self.original_estimated_runtime, 'go', label="$\mathbb{T}^i_S$ (predicted)")
+            plotter.plot(np.arange(1, len(self.original_estimated_runtime)+1), self.original_estimated_runtime, 'go', label=r"$\mathbb{T}^i_S$ (predicted)")
             # plotter.plot(np.sort(self.real_runtime), 'o', label="real runtime")
             # plotter.plot(np.sort(self.estimated_runtime), 'go', label="predicted runtime")
             plotter.xlabel('collocation points ($z_i$)')
@@ -547,7 +551,7 @@ class RuntimeStatistics(Statistics):
         #####################################
         if hasattr(self, "T_i_SWP_worker"):
             figure = plotter.figure(1, figsize=(6, 4))
-            figure.canvas.set_window_title('UQ: runtime worker')
+            figure.canvas.manager.set_window_title('UQ: runtime worker')
 
             fontsize = 15
             plotter.rc('font', family='serif', size=fontsize)
@@ -586,14 +590,14 @@ class RuntimeStatistics(Statistics):
         #####################################
         if hasattr(self, "T_i_SWP_worker"):
             figure = plotter.figure(1, figsize=(6, 4))
-            figure.canvas.set_window_title('UQ: runtime worker')
+            figure.canvas.manager.set_window_title('UQ: runtime worker')
 
             # runtime as it is
             ax = plotter.subplot(111)
             ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 
             plotter.plot(range(1, self.T_i_SWP_worker.size+1),   self.T_i_SWP_worker,   'o', label="$T_{WP_j}$")
-            plotter.plot(range(1, self.OET_i_SWP_worker.size+1), self.OET_i_SWP_worker, 'o', label="$\mathbb{T}_{WP_j}$")
+            plotter.plot(range(1, self.OET_i_SWP_worker.size+1), self.OET_i_SWP_worker, 'o', label=r"$\mathbb{T}_{WP_j}$")
             plotter.yscale('linear')
             plotter.ylim(0, max(self.T_SWP_worker.max(), self.ET_SWP_worker.max(), self.OET_SWP_worker.max()) + 10)
             ax.yaxis.set_major_formatter(ScalarFormatter(useOffset=False))
@@ -621,7 +625,7 @@ class RuntimeStatistics(Statistics):
         #####################################
         if hasattr(self, "OET_i_S_errors"):
             figure = plotter.figure(1, figsize=(12, 4))
-            figure.canvas.set_window_title('UQ: runtime estimation error')
+            figure.canvas.manager.set_window_title('UQ: runtime estimation error')
 
             fontsize = 15
             plotter.rcParams.update({'font.size': fontsize})
@@ -669,20 +673,20 @@ class RuntimeStatistics(Statistics):
         #####################################
         if hasattr(self, "OET_i_S_errors"):
             figure = plotter.figure(1, figsize=(6, 4))
-            figure.canvas.set_window_title('UQ: runtime estimation error')
+            figure.canvas.manager.set_window_title('UQ: runtime estimation error')
 
             fontsize = 15
             plotter.rc('font', family='serif', size=fontsize)
 
             # runtime as it is
             ax = figure.add_subplot(111)
-            ax.set_title("(a) Absolute error $\epsilon r_i$")
+            ax.set_title(r"(a) Absolute error $\epsilon r_i$")
             ax.plot(range(1, self.OET_i_S_errors.size + 1), self.OET_i_S_errors, 'o', label="$er_i$ (absolute error)")
             plotter.yscale('linear')
             plotter.ylim(0, self.OET_i_S_errors.max())
             # ax.yaxis.set_major_formatter(ScalarFormatter(useOffset=False))
             plotter.xlabel('collocation points ($z_i$)')
-            plotter.ylabel('absolute error $\epsilon r_i$ (s)')
+            plotter.ylabel(r'absolute error $\epsilon r_i$ (s)')
             # plotter.legend(loc='upper left')  # enable the legend
             plotter.grid(True)
 
@@ -705,20 +709,20 @@ class RuntimeStatistics(Statistics):
         #####################################
         if hasattr(self, "OET_i_S_errors_rel"):
             figure = plotter.figure(1, figsize=(6, 4))
-            figure.canvas.set_window_title('UQ: runtime estimation error')
+            figure.canvas.manager.set_window_title('UQ: runtime estimation error')
 
             fontsize = 15
             plotter.rc('font', family='serif', size=fontsize)
 
             ax = figure.add_subplot(111)
-            ax.set_title("(b) Relative error $\epsilon r_{i,rel}$")
+            ax.set_title(r"(b) Relative error $\epsilon r_{i,rel}$")
             ax.plot(range(1, self.OET_i_S_errors_rel.size + 1), self.OET_i_S_errors_rel, 'o', label="$er_{i,rel}$ (relative error)")
             # plotter.yscale('log')
             # plotter.ylim(0, 1)
             print(self.OET_i_S_errors_rel)
             # ax.yaxis.set_major_formatter(ScalarFormatter(useOffset=False))
             plotter.xlabel('collocation points ($z_i$)')
-            plotter.ylabel('relative error $\epsilon r_{i,rel}$')
+            plotter.ylabel(r'relative error $\epsilon r_{i,rel}$')
             # plotter.legend(loc='upper left')  # enable the legend
             plotter.grid(True)
 
@@ -741,7 +745,7 @@ class RuntimeStatistics(Statistics):
         #####################################
 
         figure = plotter.figure(1, figsize=(12, 4))
-        figure.canvas.set_window_title('UQ: runtime historgram')
+        figure.canvas.manager.set_window_title('UQ: runtime historgram')
 
         # runtime as it is
         plotter.subplot(111)

@@ -1,16 +1,13 @@
-argparse
 chaospy
 dill
-enum;python_version<"3.0"
-itertool;python_version<"3.0"
 joblib
 matplotlib
 more_itertools
 mpi4py
-multiprocessing;python_version<"3.0"
 numpy
 psutil
 scikit-learn
 scipy
+seaborn
 setuptools
 tabulate
