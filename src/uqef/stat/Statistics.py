@@ -42,6 +42,9 @@ class Statistics(object):
                                         poly_normed=None, poly_rule=None, cross_truncation=1.0, *args, **kwargs):
         pass
 
+    def prepareForEnsembleStatistics(self, simulationNodes, numEvaluations, *args, **kwargs):
+        pass
+
     def calcStatisticsForMcParallel(self, chunksize=1, *args, **kwargs):
         pass
 
@@ -52,7 +55,6 @@ class Statistics(object):
         pass
 
     def calcStatisticsForEnsembleParallel(self, chunksize=1, *args, **kwargs):
-        # self.calcStatisticsForMcParallel(chunksize=chunksize, regression=False, *args, **kwargs)
         pass
 
     def calcStatisticsForMc(self, rawSamples, timesteps,
@@ -78,12 +80,6 @@ class Statistics(object):
 
     def calcStatisticsForEnsemble(self, rawSamples=None, timesteps=None, simulationNodes=None, numEvaluations=None, solverTimes=None,
                                   work_package_indexes=None, original_runtime_estimator=None, *args, **kwargs):
-        # self.calcStatisticsForMc(
-        #     rawSamples=rawSamples, timesteps=timesteps, simulationNodes=simulationNodes, numEvaluations=numEvaluations,
-        #     order=None, regression=False, poly_normed=None, poly_rule=None, solverTimes=solverTimes,
-        #     work_package_indexes=work_package_indexes, original_runtime_estimator=original_runtime_estimator,
-        #     *args, **kwargs
-        # )
         pass
 
     def printResults(self, timestep=-1, **kwargs):

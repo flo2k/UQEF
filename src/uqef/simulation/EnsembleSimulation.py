@@ -9,7 +9,7 @@ from .Simulation import Simulation
 
 class EnsembleSimulation(Simulation):
     """
-    EnsembleSimulation does a monte carlo like simulation
+    EnsembleSimulation does a Monte Carlo-like simulation
     """
 
     def __init__(self, solver, *args, **kwargs):
@@ -35,6 +35,8 @@ class EnsembleSimulation(Simulation):
                            timesteps=timesteps,
                            solverTimes=self.solver.solverTimes,
                            work_package_indexes=self.solver.work_package_indexes)
+        statistics.prepareForEnsembleStatistics(
+            simulationNodes, self.numEvaluations, *args, **kwargs)
 
     def calculateStatistics(self, statistics, simulationNodes, original_runtime_estimator=None, *args, **kwargs):
         model_results = self.solver.results
