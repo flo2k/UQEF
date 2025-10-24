@@ -9,7 +9,7 @@ from .Simulation import Simulation
 
 class McSimulation(Simulation):
     """
-    ScSimulation does a monte carlo simulation
+    McSimulation does a Monte Carlo simulation
     """
 
     def __init__(self, solver, numEvaluations, p_order, rule="R", regression=False,
