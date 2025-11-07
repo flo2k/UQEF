@@ -1,18 +1,17 @@
 # UQEF - Uncertainty Quantification Execution Framework
 
-A  Python framework for efficient uncertainty quantification (UQ) of computational models with support for multiple UQ methods, parallel computing, and statistical analysis.
+A  Python framework for efficient uncertainty quantification (UQ) of computational models with support for custom models, multiple UQ methods, parallel computing, and statistical analysis.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.x](https://img.shields.io/badge/python-3.x-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Python 3.x](https://img.shields.io/badge/python-3.x-blue.svg)](https://www.python.org/) [![pypi](https://img.shields.io/pypi/v/uqef)](https://pypi.org/project/uqef)
 
 ## Overview
 
-UQEF (Uncertainty Quantification Execution Framework) is designed to facilitate uncertainty quantification analyses for computational models. It provides a unified interface for various UQ methodologies, enabling researchers and engineers to quantify uncertainties in their models efficiently and effectively.
+UQEF (Uncertainty Quantification Execution Framework) is designed to facilitate forward uncertainty quantification analyses for computational models. It provides a unified interface for various UQ methodologies, enabling researchers and engineers to quantify uncertainties in their models efficiently and effectively. With its various parallelisation methods, it supports prototyping and model execution on a single computer as well as productive runs on a cluster with the same code--just by setting some parameters. UQEF is mainly based on [Chaospy](https://github.com/jonathf/chaospy), which provides the implementation of the UQ methods.
 
 The framework is particularly well-suited for:
 - Scientific computing applications requiring uncertainty analysis (via the Monte Carlo simulations or polynomial chaos expansion-based methods)
 - Sensitivity analysis of model parameters
-- High-performance computing environments with MPI support
+- Parallel execution on single computers, up to clusters and High-performance computing environments with MPI support
 
 ## Key Features
 
@@ -23,24 +22,26 @@ The framework is particularly well-suited for:
 - **Ensemble Simulations**: User-defined parameter sets for ensemble runs
 
 ### Parallel Computing Support
-- **MPI**: Distributed memory parallelization using `mpi4py`
 - **Multiprocessing**: Shared memory parallelization for multi-core systems
+- **MPI**: Distributed memory parallelization using `mpi4py`
 - **Combined Parallelization**: Hybrid MPI + multiprocessing approaches
 - **Runtime Optimization**: Intelligent task scheduling (LPT, SPT, MULTIFIT algorithms)
+- Automatic runtime measurements, predictions, and optimised scheduling
 
 ### Statistical Analysis
-- Comprehensive statistical measures (mean, variance, standard deviation)
+- Comprehensive statistical measures (mean, variance, standard deviation, percentiles, ...)
+- Generation of numerically constructed probability distributions as the quantity of interest.
 - Sobol sensitivity indices (first-order, total-order, and higher-order)
-- Polynomial Chaos Expansion (PCE) surrogate models
 
-### Flexible Configuration
+### Flexible Configuration and Parametrisation
 - JSON-based configuration files for parameter definitions
 - Command-line interface with extensive options
 - Custom model integration capabilities
+- Custom statistics integration capabilities
 
 ### Visualization & Output
-- Automatic generation of statistical plots
-- Multiple output formats (pickle, CSV, NetCDF)
+- Automatic generation of statistical plots in custom statistics
+- Multiple output formats for data (pickle, CSV, NetCDF)
 
 ## Installation
 
@@ -48,18 +49,23 @@ The framework is particularly well-suited for:
 - Python 3.x
 - MPI implementation (e.g., OpenMPI, MPICH) for parallel execution
 
+### Install from pypi
+```bash
+pip install uqef
+```
+
 ### Install from source
 
 ```bash
-git clone https://gitlab.lrz.de/tum-i05/software/UQEF.git
+git clone https://github.com/flo2k/UQEF.git
 cd UQEF
 pip install -e .
 ```
 
 ### Dependencies
 
-UQEF requires the following Python packages:
-- `chaospy` - For probabilisitc modelling and forward uncertainty propagation (i.e., via the MC sampling methods or Polynomial chaos expansion-based methods)
+UQEF requires the following Python packages ([requirements.txt](requirements.txt)):
+- `chaospy` - For probabilistic modelling and forward uncertainty propagation (i.e., via the MC sampling methods or Polynomial chaos expansion-based methods)
 - `numpy` - Numerical computing
 - `scipy` - Scientific computing
 - `matplotlib` - Plotting and visualization
@@ -69,7 +75,7 @@ UQEF requires the following Python packages:
 - `dill` - Serialization
 - `tabulate` - Table formatting
 - `seaborn` - Statistical visualizations
-- `more_itertools` - Advanced iteration tools
+- `more-itertools` - Advanced iteration tools
 
 All dependencies will be automatically installed when using `pip install`.
 
@@ -108,6 +114,12 @@ uqsim.save_statistics()
 uqsim.tear_down()
 ```
 
+Run with:
+```bash
+python your_script.py
+```
+This starts your UQ simulation with the `testmodel`, which is the default model, until some other model (see: [Model settings](#model-settings) and [Custom model and statistics integration](#custom-model-and-statistics-integration)) is set.
+
 ### Using Configuration Files
 
 Create a `config.json` file:
@@ -144,7 +156,7 @@ Run a Monte Carlo simulation with 1000 samples:
 python -m uqef.UQsim --uq_method mc --mc_numevaluations 1000 --parallel --num_cores 4
 ```
 
-Run a Stochastic Collocation simulation with MPI:
+Run a Stochastic Collocation with the pseudo-spectral approach simulation with MPI:
 ```bash
 mpirun -n 8 python your_script.py --uq_method sc --sc_q_order 3 --sc_p_order 2 --mpi
 ```
@@ -154,13 +166,15 @@ Run Saltelli sensitivity analysis:
 python your_script.py --uq_method saltelli --mc_numevaluations 1000 --compute_Sobol_t
 ```
 
-## Usage
+## UQsim parametrisation options
 
-### UQ Methods
+### UQ method and uncertain parameter settings
+- `--uncertain`: Uncertain setting: can be evaluated to choose different probability distributions and their parameter values
+- `--uq_method`: Define the UQ method: `sc`, `mc`, `saltelli`, or `ensemble`
 
 #### Monte Carlo (`--uq_method mc`)
 - `--mc_numevaluations`: Number of Monte Carlo samples
-- `--sampling_rule`: Sampling strategy (random, sobol, latin_hypercube, halton, hammersley)
+- `--sampling_rule`: Sampling strategy (`random`, `sobol`, `latin_hypercube`, `halton`, `hammersley`)
 - `--regression`: Enable regression-based surrogate modeling (i.e., PCE-based)
 
 #### Stochastic Collocation (`--uq_method sc`)
@@ -180,35 +194,46 @@ python your_script.py --uq_method saltelli --mc_numevaluations 1000 --compute_So
 - `--read_nodes_from_file`: Read parameter values from file
 - `--parameters_file`: File containing parameter sets
 
+### Model and result directories
+- `--inputModelDir`: Folder for the input files of the model
+- `--outputModelDir`: Folder for the output files of the model
+- `--outputResultDir`: Folder for the statistics results (plots, tables (csv), ...)
+
+### Model settings
+- `--model`: Name of the model
+- `--model_variant`: Variant of the chosen model
+
 ### Parallelization Options
-
-- `--parallel`: Enable shared-memory parallelization
-- `--num_cores`: Number of cores to use (default: all available)
+- `--parallel`: Enable shared-memory parallelization with threading
+- `--num_cores`: Number of cores per node to use (default: all available)
 - `--mpi`: Enable MPI parallelization
-- `--mpi_method`: MPI implementation (MpiPoolSolver or MpiSolver)
-- `--mpi_combined_parallel`: Enable hybrid MPI + multiprocessing
-- `--chunksize`: Task chunk size for parallel execution
+- `--mpi_method`: Choose MPI solver (`MpiPoolSolver` or `MpiSolver`)
+- `--mpi_combined_parallel`: Enable hybrid MPI + multiprocessing (data distribution to the nodes via MPI and parallelisation with a node via threading)
+- `--chunksize`: Number of runs that are chunked into a group
+- `--mpi_chunksize`: Number of runs that are sent as a package via MPI
 
-### Output Options
-
-- `--outputResultDir`: Directory for simulation results (default: current directory)
-- `--save_all_simulations`: Save complete simulation data
-- `--store_qoi_data_in_stat_dict`: Store quantity of interest data
-- `--store_gpce_surrogate_in_stat_dict`: Store PCE surrogate model
-- `--instantly_save_results_for_each_time_step`: Save results incrementally
-
-### Runtime Optimization
-
+### Runtime Analysis and Optimization
 - `--analyse_runtime`: Enable runtime analysis
 - `--opt_runtime`: Enable runtime optimization with load balancing
-- `--opt_algorithm`: Scheduling algorithm (LPT, SPT, FCFS, MULTIFIT)
-- `--opt_strategy`: Optimization strategy (FIXED_ALTERNATE, FIXED_LINEAR, DYNAMIC)
+- `--opt_runtime_gpce_Dir`: Define the folder for the runtime data
+- `--opt_algorithm`: Scheduling algorithm (FCFS, LPT, SPT, or MULTIFIT)
+- `--opt_strategy`: Optimization strategy (FIXED_ALTERNATE, FIXED_LINEAR, or DYNAMIC)
 
-### State Management
+### Statistics Options
+- `--disable_statistics`: Disable all statistical calculations including plots (useful when restoring a saved uqsim object from file)
+- `--disable_calc_statistics`: Disable the calculation of statistics
+- `--disable_recalc_statistics`: Disable the recalculation of statistics (useful when restoring a saved uqsim object from file)
 
+### UQsim State Management: Save/Restore
 - `--uqsim_store_to_file`: Save UQsim state for later restoration
 - `--uqsim_restore_from_file`: Restore UQsim from saved state
 - `--uqsim_file`: Filename for state storage (default: uqsim.saved)
+
+### Additional Output Options
+- `--save_all_simulations`: Save complete simulation data
+- `--store_qoi_data_in_stat_dict`: Store quantity of interest data
+- `--store_gpce_surrogate_in_stat_dict`: Store PCE surrogate model
+- `--instantly_save_results_for_each_time_step`: Save results incrementally (has to be done in custom models)
 
 ## Project Structure
 
@@ -225,15 +250,12 @@ UQEF/
 │       ├── solver/               # Parallel solvers
 │       ├── stat/                 # Statistical analysis
 │       └── util/                 # Utility functions
-├── examples/                      # Example scripts
-│   ├── simple_example_uqsim.py   # Basic usage example
-│   ├── config.json               # Example configuration
-│   └── start_simple_example_uqsim.sh
-├── tests/                         # Unit tests
-├── doc/                          # Documentation
-├── setup.py                      # Package setup
+├── examples/                     # Example scripts
+├── pyproject.toml                # Package setup
+├── README.md                     # This file
 ├── requirements.txt              # Python dependencies
-└── README.md                     # This file
+├── setup.py                      # Package setup
+└── setup.cfg                     # Package setup configuration
 ```
 
 ## Examples
@@ -241,7 +263,7 @@ UQEF/
 The `examples/` directory contains several demonstration scripts:
 
 - **`simple_example_uqsim.py`**: Basic UQ simulation with the test model
-- **`simple_example_testmodel.py`**: Direct model usage
+- **`simple_example_testmodel.py`**: Direct model usage (without a UQsim object)
 - **`simple_example_uqsim_config_file.py`**: Configuration file-based setup
 - **`simple_example_uqsim_restore.py`**: State restoration example
 
@@ -257,65 +279,77 @@ cd examples
 bash start_simple_example_uqsim.sh
 ```
 
-## Custom Model Integration
+## Custom Model and Statistics Integration
 
 To integrate your own model with UQEF:
+- Create and register a custom model
+- Create and register a custom statistics for your model
 
-1. Create a model class that inherits from `uqef.model.Model`
+### Custom Model
+1. Create a model class that inherits from `uqef.model.Model` (For a valid model implementation look at: [TestModel.py](src/uqef/model/TestModel.py))
 2. Implement the required methods
 3. Register your model in the `models` dictionary
-4. Define corresponding statistics class for your model
 
-Example:
+Example for custom model usage:
 ```python
-import uqef
+from CustomModel import CustomModel
 
-class MyModel(uqef.model.Model):
-    def __init__(self):
-        super().__init__()
-    
-    def run(self, parameters):
-        # Your model implementation
-        result = your_simulation_code(parameters)
-        return result
+# choose custom_model
+uqsim.args.model = "custom_model"
 
-# Register the model
-uqsim = uqef.UQsim()
-uqsim.models["mymodel"] = lambda: MyModel()
-uqsim.args.model = "mymodel"
+# register model
+uqsim.models.update({"custom_model": lambda: CustomModel()})
+```
+
+### Custom Statistics
+1. Create a statistics class that inherits from `uqef.stat.Statistics`
+2. Implement the required methods
+3. Register your model in the `statistics` dictionary (For a valid model implementation look at: [TestModelStatistics.py](src/uqef/stat/TestModelStatistics.py))
+
+Example for custom model and statistics usage:
+```python
+from CustomModel import CustomModel
+from CustomStatistics import CustomStatistics
+
+# choose custom_model
+uqsim.args.model = "custom_model"
+
+# register model
+uqsim.models.update({"custom_model": lambda: CustomModel()})
+
+# register statistics
+uqsim.statistics.update({"custom_model": lambda: CustomStatistics()})
 ```
 
 ## Advanced Features
 
 ### Sparse Grid Quadrature
-For high-dimensional problems, enable sparse grids to reduce computational cost:
+For high-dimensional problems, enable sparse grids* to reduce computational cost:
 ```bash
 python your_script.py --uq_method sc --sc_sparse_quadrature --sc_q_order 5
 ```
 
+*Here, the chaospy sparse grid implementation is used.
+
 ### Regression-Based PCE
 Build surrogate models using regression instead of collocation:
 ```bash
-python your_script.py --uq_method mc --regression --regression_model_type LARS
-```
-
-### Sensitivity Analysis with Sobol Indices
-Compute comprehensive sensitivity measures:
-```bash
-python your_script.py --uq_method saltelli --compute_Sobol_t --compute_Sobol_m --compute_Sobol_m2
+python your_script.py --uq_method mc --regression
 ```
 
 ### Runtime Optimization for Heterogeneous Tasks
-Enable intelligent load balancing for varying computational costs:
+Enable intelligent load balancing for varying computational costs*:
 ```bash
-python your_script.py --opt_runtime --opt_algorithm LPT --opt_strategy DYNAMIC
+python your_script.py --analyse_runtime --opt_runtime --opt_algorithm LPT --opt_strategy DYNAMIC
 ```
+
+*On the first run, it saves the runtime predictor on `save_statistics()`, and on the second run it load from a file and use it for the prediction and optimisation step within UQEF.
 
 ## Performance Considerations
 
-- For large-scale problems, use MPI parallelization with `--mpi`
+- For large-scale problems, use MPI parallelization on a cluster/HPC with `--mpi`
 - Adjust `--chunksize` and `--mpi_chunksize` for optimal load balancing
-- Enable `--opt_runtime` for heterogeneous computational loads
+- Enable `--analyse_runtime` and `--opt_runtime` for heterogeneous computational loads
 - Use sparse quadrature for problems with dimension > 5
 - Consider regression-based approaches for high-dimensional spaces
 
@@ -325,16 +359,10 @@ python your_script.py --opt_runtime --opt_algorithm LPT --opt_strategy DYNAMIC
 If you encounter MPI-related errors:
 ```bash
 # Check MPI installation
-mpirun --version
+mpiexec --version
 
 # Try running with explicit host specification
-mpirun -n 4 --host localhost:4 python your_script.py --mpi
-```
-
-### Memory Issues
-For large problems, enable incremental saving:
-```bash
-python your_script.py --instantly_save_results_for_each_time_step
+mpiexec -n 4 python your_script.py --mpi
 ```
 
 ### Import Errors
@@ -353,13 +381,17 @@ This project is licensed under the MIT License. See the `LICENSE.txt` file for d
 
 ## Author
 
-**Florian Kuenzner**  
-Technical University of Munich (TUM)  
-Email: florian.kuenzner@tum.de
+**Florian Kuenzner**
+Technical University of Munich (TUM), Rosenheim Technical University of Applied Sciences
+Email: florian.kuenzner@th-rosenheim.de
+
+**Ivana Jovanovic**
+Technical University of Munich (TUM)
+Email: ivana.jovanovic@tum.de
 
 ## Repository
 
-GitLab: [https://gitlab.lrz.de/tum-i05/software/UQEF](https://gitlab.lrz.de/tum-i05/software/UQEF)
+GitLab: [https://github.com/flo2k/UQEF.git](https://github.com/flo2k/UQEF.git)
 
 ## Citation
 
@@ -369,9 +401,19 @@ If you use UQEF in your research, please cite:
 @software{uqef,
   author = {Kuenzner, Florian},
   title = {UQEF: Uncertainty Quantification Execution Framework},
-  version = {0.4},
-  url = {https://gitlab.lrz.de/tum-i05/software/UQEF},
-  institution = {Technical University of Munich}
+  version = {1.0},
+  url = {https://github.com/flo2k/UQEF.git},
+  institution = {Technical University of Munich, Rosenheim Technical University of Applied Sciences}
+}
+```
+
+```bibtex
+@phdthesis{dissertation,
+  author = {Künzner, Florian},
+  title = {Efficient non-intrusive uncertainty quantification for large-scale simulation scenarios},
+  year = {2021},
+  school = {Technische Universität München},
+  url = {https://mediatum.ub.tum.de/1576066},
 }
 ```
 
@@ -384,8 +426,8 @@ UQEF builds upon several excellent open-source projects:
 
 ## Version History
 
-- **v0.4** (Current): Production-stable release with comprehensive UQ methods and parallel computing support
+- **v1.0** (Current): Production-stable release with comprehensive UQ methods and parallel computing support
 
 ---
 
-For more information, examples, and updates, visit the [GitLab repository](https://gitlab.lrz.de/tum-i05/software/UQEF).
+For more information, examples, and updates, visit the [GitLab repository](https://github.com/flo2k/UQEF.git).

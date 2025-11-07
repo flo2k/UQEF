@@ -1,6 +1,5 @@
 #!/bin/bash
 
-export PYTHONPATH=$PYTHONPATH:/data/repos/repos_tum/chaospy_run.git
 export PYTHONPATH=$PYTHONPATH:../src
 
 python_cmd=python3

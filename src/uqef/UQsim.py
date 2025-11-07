@@ -124,7 +124,7 @@ class UQsim(object):
         self.parser.add_argument('--sc_poly_normed'            , action='store_true', default=False)
         self.parser.add_argument('--sc_poly_rule'              , default="three_terms_recurrence") # "gram_schmidt" | "three_terms_recurrence" | "cholesky"
         self.parser.add_argument('--cross_truncation'          , type=float, default=1.0)
-        self.parser.add_argument('--regression_model_type'     , type=str, default=None)  # None | "OLS" | "LARS"
+        self.parser.add_argument('--regression_model_type'     , type=str, default=None)  # None | "OLS" | "LARS" -> has to be implemented in custom statistics implementations (used feature from chaospy)
         self.parser.add_argument('--sampling_rule'             , default='random')  # "sobol" | "latin_hypercube" | "halton"  | "hammersley"
         self.parser.add_argument('--transformToStandardDist'   , action='store_true', default=False)
         self.parser.add_argument('--sampleFromStandardDist'    , action='store_true', default=False)
@@ -144,9 +144,9 @@ class UQsim(object):
 
         self.parser.add_argument('--instantly_save_results_for_each_time_step'       , action='store_true', default=False)
         self.parser.add_argument('--parallel_statistics'       , action='store_true', default=False)
-        self.parser.add_argument('--compute_Sobol_t'           , action='store_true', default=False)
-        self.parser.add_argument('--compute_Sobol_m'           , action='store_true', default=False)
-        self.parser.add_argument('--compute_Sobol_m2'          , action='store_true', default=False)
+        self.parser.add_argument('--compute_Sobol_t'           , action='store_true', default=False) # has to be implemented in custom statistics implementations
+        self.parser.add_argument('--compute_Sobol_m'           , action='store_true', default=False) # has to be implemented in custom statistics implementations
+        self.parser.add_argument('--compute_Sobol_m2'          , action='store_true', default=False) # has to be implemented in custom statistics implementations
         self.parser.add_argument('--save_all_simulations'      , action='store_true', default=False)  # This might be a lot of data
         self.parser.add_argument('--store_qoi_data_in_stat_dict'      , action='store_true', default=False)
         self.parser.add_argument('--store_gpce_surrogate_in_stat_dict'      , action='store_true', default=False)  # Only relevant for sc mode when the gPCE surrogate is produced
@@ -257,7 +257,7 @@ class UQsim(object):
                         elif "default" in parameter_config:
                             self.simulationNodes.setValue(parameter_config["name"], parameter_config["default"])
                         else:
-                            raise Exception(f"Error in UQSim.setup_nodes_via_config_file_or_parameters_file() : "
+                            raise Exception(f"Error in UQsim.setup_nodes_via_config_file_or_parameters_file() : "
                                             f" an ensemble simulation should be run, "
                                             f"but values_list or default entries for parameter values are missing")
                     elif parameter_config["distribution"] == "None":
@@ -267,7 +267,7 @@ class UQsim(object):
                         elif 'default' in parameter_config:
                             self.simulationNodes.setValue(parameter_config["name"], parameter_config["default"])
                         else:
-                            raise Exception(f"Error in UQSim.setup_nodes_via_config_file_or_parameters_file() : "
+                            raise Exception(f"Error in UQsim.setup_nodes_via_config_file_or_parameters_file() : "
                                             f" distribution of a parameter is None, "
                                             f"but values_list or default entries are missing")
                     else:
@@ -496,7 +496,7 @@ class UQsim(object):
                         self.runtime_statistic, self.simulationNodes, self.runtime_estimator, **kwargs)
 
     def print_statistics(self, **kwargs):
-        if self.is_master() and self.args.disable_statistics is False:
+        if self.is_master() and (self.args.disable_statistics is False or self.args.disable_calc_statistics):
             print("print statistics...")
             print(self.statistic.printResults(**kwargs))
 
@@ -504,13 +504,13 @@ class UQsim(object):
                 print(self.runtime_statistic.printResults(**kwargs))
 
     def plot_nodes(self, display=False, **kwargs):
-        if self.is_master() and self.args.disable_statistics is False:
+        if self.is_master() and (self.args.disable_statistics is False or self.args.disable_calc_statistics):
             print("generate node plots...")
             fileName = self.simulation.name
             self.simulationNodes.plotDists(fileName=fileName, directory=self.args.outputResultDir, display=display)
 
     def plot_statistics(self, display=False, **kwargs):
-        if self.is_master() and self.args.disable_statistics is False:
+        if self.is_master() and (self.args.disable_statistics is False or self.args.disable_calc_statistics):
             print("generate stat plots...")
             fileName = self.simulation.name
             self.statistic.plotResults(display=display, fileName=fileName, directory=self.args.outputResultDir,
@@ -521,7 +521,7 @@ class UQsim(object):
                                                    directory=self.args.outputResultDir, **kwargs)
 
     def plot_animations(self, timesteps, display=False, **kwargs):
-        if self.is_master() and self.args.disable_statistics is False:
+        if self.is_master() and (self.args.disable_statistics is False or self.args.disable_calc_statistics):
             print("generate stat animations...")
             fileName = self.simulation.name
             self.statistic.plotAnimation(
@@ -538,7 +538,7 @@ class UQsim(object):
             self.simulationNodes.saveToFile(self.args.outputResultDir + "/" + fileName)
 
     def save_statistics(self, **kwargs):
-        if self.is_master() and self.args.disable_statistics is False:
+        if self.is_master() and (self.args.disable_statistics is False or self.args.disable_calc_statistics):
             print("save statistics...")
 
             fileName=None
