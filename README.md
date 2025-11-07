@@ -75,7 +75,7 @@ UQEF requires the following Python packages ([requirements.txt](requirements.txt
 - `dill` - Serialization
 - `tabulate` - Table formatting
 - `seaborn` - Statistical visualizations
-- `more_itertools` - Advanced iteration tools
+- `more-itertools` - Advanced iteration tools
 
 All dependencies will be automatically installed when using `pip install`.
 
@@ -171,7 +171,6 @@ python your_script.py --uq_method saltelli --mc_numevaluations 1000 --compute_So
 ### UQ method and uncertain parameter settings
 - `--uncertain`: Uncertain setting: can be evaluated to choose different probability distributions and their parameter values
 - `--uq_method`: Define the UQ method: `sc`, `mc`, `saltelli`, or `ensemble`
-- ``
 
 #### Monte Carlo (`--uq_method mc`)
 - `--mc_numevaluations`: Number of Monte Carlo samples
@@ -211,18 +210,9 @@ python your_script.py --uq_method saltelli --mc_numevaluations 1000 --compute_So
 - `--mpi_method`: Choose MPI solver (`MpiPoolSolver` or `MpiSolver`)
 - `--mpi_combined_parallel`: Enable hybrid MPI + multiprocessing (data distribution to the nodes via MPI and parallelisation with a node via threading)
 - `--chunksize`: Number of runs that are chunked into a group
-- `--chmpi_chunksizeunksize`: Number of runs that are sent as a package via MPI
-
-### Output Options
-
-- `--outputResultDir`: Directory for simulation results (default: current directory)
-- `--save_all_simulations`: Save complete simulation data
-- `--store_qoi_data_in_stat_dict`: Store quantity of interest data
-- `--store_gpce_surrogate_in_stat_dict`: Store PCE surrogate model
-- `--instantly_save_results_for_each_time_step`: Save results incrementally (has to be done in custom models)
+- `--mpi_chunksize`: Number of runs that are sent as a package via MPI
 
 ### Runtime Analysis and Optimization
-
 - `--analyse_runtime`: Enable runtime analysis
 - `--opt_runtime`: Enable runtime optimization with load balancing
 - `--opt_runtime_gpce_Dir`: Define the folder for the runtime data
@@ -230,14 +220,20 @@ python your_script.py --uq_method saltelli --mc_numevaluations 1000 --compute_So
 - `--opt_strategy`: Optimization strategy (FIXED_ALTERNATE, FIXED_LINEAR, or DYNAMIC)
 
 ### Statistics Options
-- `--disable_recalc_statistics`: Disable the recalculation of statistics (useful when restoring a saved uqsim object from file)
 - `--disable_statistics`: Disable all statistical calculations including plots (useful when restoring a saved uqsim object from file)
+- `--disable_calc_statistics`: Disable the calculation of statistics
+- `--disable_recalc_statistics`: Disable the recalculation of statistics (useful when restoring a saved uqsim object from file)
 
 ### UQsim State Management: Save/Restore
-
 - `--uqsim_store_to_file`: Save UQsim state for later restoration
 - `--uqsim_restore_from_file`: Restore UQsim from saved state
 - `--uqsim_file`: Filename for state storage (default: uqsim.saved)
+
+### Additional Output Options
+- `--save_all_simulations`: Save complete simulation data
+- `--store_qoi_data_in_stat_dict`: Store quantity of interest data
+- `--store_gpce_surrogate_in_stat_dict`: Store PCE surrogate model
+- `--instantly_save_results_for_each_time_step`: Save results incrementally (has to be done in custom models)
 
 ## Project Structure
 
@@ -308,7 +304,7 @@ uqsim.models.update({"custom_model": lambda: CustomModel()})
 ### Custom Statistics
 1. Create a statistics class that inherits from `uqef.stat.Statistics`
 2. Implement the required methods
-3. Register your model in the `statistics` dictionary
+3. Register your model in the `statistics` dictionary (For a valid model implementation look at: [TestModelStatistics.py](src/uqef/stat/TestModelStatistics.py))
 
 Example for custom model and statistics usage:
 ```python
@@ -328,34 +324,32 @@ uqsim.statistics.update({"custom_model": lambda: CustomStatistics()})
 ## Advanced Features
 
 ### Sparse Grid Quadrature
-For high-dimensional problems, enable sparse grids to reduce computational cost:
+For high-dimensional problems, enable sparse grids* to reduce computational cost:
 ```bash
 python your_script.py --uq_method sc --sc_sparse_quadrature --sc_q_order 5
 ```
 
+*Here, the chaospy sparse grid implementation is used.
+
 ### Regression-Based PCE
 Build surrogate models using regression instead of collocation:
 ```bash
-python your_script.py --uq_method mc --regression --regression_model_type LARS
-```
-
-### Sensitivity Analysis with Sobol Indices
-Compute comprehensive sensitivity measures:
-```bash
-python your_script.py --uq_method saltelli --compute_Sobol_t --compute_Sobol_m --compute_Sobol_m2
+python your_script.py --uq_method mc --regression
 ```
 
 ### Runtime Optimization for Heterogeneous Tasks
-Enable intelligent load balancing for varying computational costs:
+Enable intelligent load balancing for varying computational costs*:
 ```bash
 python your_script.py --analyse_runtime --opt_runtime --opt_algorithm LPT --opt_strategy DYNAMIC
 ```
 
+*On the first run, it saves the runtime predictor on `save_statistics()`, and on the second run it load from a file and use it for the prediction and optimisation step within UQEF.
+
 ## Performance Considerations
 
-- For large-scale problems, use MPI parallelization with `--mpi`
+- For large-scale problems, use MPI parallelization on a cluster/HPC with `--mpi`
 - Adjust `--chunksize` and `--mpi_chunksize` for optimal load balancing
-- Enable `--opt_runtime` for heterogeneous computational loads
+- Enable `--analyse_runtime` and `--opt_runtime` for heterogeneous computational loads
 - Use sparse quadrature for problems with dimension > 5
 - Consider regression-based approaches for high-dimensional spaces
 
@@ -365,16 +359,10 @@ python your_script.py --analyse_runtime --opt_runtime --opt_algorithm LPT --opt_
 If you encounter MPI-related errors:
 ```bash
 # Check MPI installation
-mpirun --version
+mpiexec --version
 
 # Try running with explicit host specification
-mpirun -n 4 --host localhost:4 python your_script.py --mpi
-```
-
-### Memory Issues
-For large problems, enable incremental saving:
-```bash
-python your_script.py --instantly_save_results_for_each_time_step
+mpiexec -n 4 python your_script.py --mpi
 ```
 
 ### Import Errors
@@ -397,6 +385,10 @@ This project is licensed under the MIT License. See the `LICENSE.txt` file for d
 Technical University of Munich (TUM), Rosenheim Technical University of Applied Sciences
 Email: florian.kuenzner@th-rosenheim.de
 
+**Ivana Jovanovic**
+Technical University of Munich (TUM)
+Email: ivana.jovanovic@tum.de
+
 ## Repository
 
 GitLab: [https://github.com/flo2k/UQEF.git](https://github.com/flo2k/UQEF.git)
@@ -409,7 +401,7 @@ If you use UQEF in your research, please cite:
 @software{uqef,
   author = {Kuenzner, Florian},
   title = {UQEF: Uncertainty Quantification Execution Framework},
-  version = {0.4},
+  version = {1.0},
   url = {https://github.com/flo2k/UQEF.git},
   institution = {Technical University of Munich, Rosenheim Technical University of Applied Sciences}
 }
@@ -434,7 +426,7 @@ UQEF builds upon several excellent open-source projects:
 
 ## Version History
 
-- **v0.4** (Current): Production-stable release with comprehensive UQ methods and parallel computing support
+- **v1.0** (Current): Production-stable release with comprehensive UQ methods and parallel computing support
 
 ---
 
