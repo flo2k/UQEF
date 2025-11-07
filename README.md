@@ -166,7 +166,7 @@ Run Saltelli sensitivity analysis:
 python your_script.py --uq_method saltelli --mc_numevaluations 1000 --compute_Sobol_t
 ```
 
-## UQSim parametrisation options
+## UQsim parametrisation options
 
 ### UQ method and uncertain parameter settings
 - `--uncertain`: Uncertain setting: can be evaluated to choose different probability distributions and their parameter values
@@ -263,7 +263,7 @@ UQEF/
 The `examples/` directory contains several demonstration scripts:
 
 - **`simple_example_uqsim.py`**: Basic UQ simulation with the test model
-- **`simple_example_testmodel.py`**: Direct model usage (without a UQSim object)
+- **`simple_example_testmodel.py`**: Direct model usage (without a UQsim object)
 - **`simple_example_uqsim_config_file.py`**: Configuration file-based setup
 - **`simple_example_uqsim_restore.py`**: State restoration example
 
