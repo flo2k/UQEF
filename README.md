@@ -114,6 +114,12 @@ uqsim.save_statistics()
 uqsim.tear_down()
 ```
 
+Run with:
+```bash
+python your_script.py
+```
+This starts your UQ simulation with the `testmodel`, which is the default model, until some other model (see: [Model settings](#model-settings) and [Custom model and statistics integration](#custom-model-and-statistics-integration)) is set.
+
 ### Using Configuration Files
 
 Create a `config.json` file:
@@ -160,7 +166,7 @@ Run Saltelli sensitivity analysis:
 python your_script.py --uq_method saltelli --mc_numevaluations 1000 --compute_Sobol_t
 ```
 
-## Usage
+## UQSim parametrisation options
 
 ### UQ method and uncertain parameter settings
 - `--uncertain`: Uncertain setting: can be evaluated to choose different probability distributions and their parameter values
