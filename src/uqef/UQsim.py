@@ -257,7 +257,7 @@ class UQsim(object):
                         elif "default" in parameter_config:
                             self.simulationNodes.setValue(parameter_config["name"], parameter_config["default"])
                         else:
-                            raise Exception(f"Error in UQSim.setup_nodes_via_config_file_or_parameters_file() : "
+                            raise Exception(f"Error in UQsim.setup_nodes_via_config_file_or_parameters_file() : "
                                             f" an ensemble simulation should be run, "
                                             f"but values_list or default entries for parameter values are missing")
                     elif parameter_config["distribution"] == "None":
@@ -267,7 +267,7 @@ class UQsim(object):
                         elif 'default' in parameter_config:
                             self.simulationNodes.setValue(parameter_config["name"], parameter_config["default"])
                         else:
-                            raise Exception(f"Error in UQSim.setup_nodes_via_config_file_or_parameters_file() : "
+                            raise Exception(f"Error in UQsim.setup_nodes_via_config_file_or_parameters_file() : "
                                             f" distribution of a parameter is None, "
                                             f"but values_list or default entries are missing")
                     else:
