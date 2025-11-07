@@ -2,7 +2,7 @@ chaospy
 dill
 joblib
 matplotlib
-more_itertools
+more-itertools
 mpi4py
 numpy
 psutil
