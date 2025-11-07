@@ -1,5 +1,6 @@
 """
-A simple example for the usage of the UQEF with a test model.
+A simple example for the usage of the UQEF with a test model loading the uncertain 
+parameter configuration from a config file (config.json).
 
 @author: Florian Kuenzner
 """
