@@ -40,10 +40,10 @@ class EnsembleSimulation(Simulation):
 
     def calculateStatistics(self, statistics, simulationNodes, original_runtime_estimator=None, *args, **kwargs):
         model_results = self.solver.results
-        timesteps = self.solver.timesteps
+        timesteps = self.solver.timesteps()
         solverTimes = self.solver.solverTimes
         self.original_runtime_estimator = original_runtime_estimator
-
+        
         statistics.calcStatisticsForEnsemble(
             rawSamples=model_results,
             timesteps=timesteps,
