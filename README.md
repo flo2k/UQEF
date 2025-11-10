@@ -156,9 +156,9 @@ Run a Monte Carlo simulation with 1000 samples:
 python -m uqef.UQsim --uq_method mc --mc_numevaluations 1000 --parallel --num_cores 4
 ```
 
-Run a Stochastic Collocation with the pseudo-spectral approach simulation with MPI:
+Run the pseudo-spectral approach simulation with MPI:
 ```bash
-mpirun -n 8 python your_script.py --uq_method sc --sc_q_order 3 --sc_p_order 2 --mpi
+mpiexec -n 8 python your_script.py --uq_method sc --sc_q_order 3 --sc_p_order 2 --mpi
 ```
 
 Run Saltelli sensitivity analysis:
@@ -385,13 +385,13 @@ This project is licensed under the MIT License. See the `LICENSE.txt` file for d
 Technical University of Munich (TUM), Rosenheim Technical University of Applied Sciences
 Email: florian.kuenzner@th-rosenheim.de
 
-**Ivana Jovanovic**
+**Ivana Jovanovic Buha**
 Technical University of Munich (TUM)
 Email: ivana.jovanovic@tum.de
 
 ## Repository
 
-GitLab: [https://github.com/flo2k/UQEF.git](https://github.com/flo2k/UQEF.git)
+GitHub: [https://github.com/flo2k/UQEF.git](https://github.com/flo2k/UQEF.git)
 
 ## Citation
 
@@ -420,9 +420,17 @@ If you use UQEF in your research, please cite:
 ## Acknowledgments
 
 UQEF builds upon several excellent open-source projects:
-- **chaospy**: For polynomial chaos expansion functionality
+- **chaospy**: For probabilistic modeling, MC-based sampling and polynomial chaos expansion functionalities
 - **mpi4py**: For MPI parallelization support
 - **NumPy/SciPy**: For numerical computing foundations
+
+## Projects Using the UQEF Software
+
+The following projects and research efforts are built using **UQEF**:
+
+- [UQEF-Dynamic](https://github.com/ivanajovanovic/UQEF-Dynamic) — this 
+software tool extends the capabilities of the UQEF to handle time-dependent processes. It supports several advanced uncertainty quantification methods, including the construction of Karhunen–Loève expansions to reduce the dimensionality of quantities of interest (QoIs). It also enables the derivation of time-varying Sobol sensitivity indices using both sampling-based (throug the Saltelli's approacha or rank-based approach) and PCE–based estimators, as well as generalized Sobol indices for vector- and function-valued QoIs.
+
 
 ## Version History
 
