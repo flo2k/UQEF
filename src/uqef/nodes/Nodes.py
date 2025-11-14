@@ -24,6 +24,8 @@ import copyreg
 import zipimport
 copyreg.pickle(zipimport.zipimporter, lambda x: (x.__class__, (x.archive, )))
 
+from uqef.nodes.transformations import AdaptiveTransformation
+
 class Nodes(object):
     """
     Nodes represents the nodes and parameters for a UQ simulation
@@ -122,6 +124,81 @@ class Nodes(object):
             self.joinedDists = None
             self.joinedStandardDists = None
 
+    ###################################
+
+    def _order_distributions(self):
+        """Order distributions according to node names order"""
+        ordered_dists = []
+        ordered_dist_names = []
+        ordered_standard_dists = []
+        
+        for node_name in self.nodeNames:
+            if node_name in self.dists:
+                ordered_dists.append(self.dists[node_name])
+                ordered_dist_names.append(node_name)
+                if self._performTransformation:
+                    ordered_standard_dists.append(self.standardDists[node_name])
+    
+        return ordered_dists, ordered_dist_names, ordered_standard_dists
+
+    def _create_joined_distributions(self, ordered_dists, ordered_standard_dists):
+        """Create joined distributions from ordered distributions"""
+        if len(ordered_dists) > 0:
+            joined_dists = cp.J(*ordered_dists)
+            joined_standard_dists = None
+            
+            if self._performTransformation and ordered_standard_dists:
+                joined_standard_dists = cp.J(*ordered_standard_dists)
+            
+            return joined_dists, joined_standard_dists
+        
+        return None, None
+
+    def _load_nodes_from_file(self, parameters_file_name, stochastic_dim, 
+                            parameters_setup_file_name=None):
+        """Load nodes and weights from file"""
+        nodes_and_weights_array = np.loadtxt(parameters_file_name, delimiter=',')
+        nodes_read = nodes_and_weights_array[:, :stochastic_dim].T
+        weights_read = nodes_and_weights_array[:, stochastic_dim]
+        
+        return self._transform_nodes_and_weights_read_from_file(
+            nodes_read_from_file=nodes_read,
+            weights_read_from_file=weights_read,
+            performTransformation=self._performTransformation,
+            stochastic_dim=stochastic_dim,
+            parameters_setup_file_name=parameters_setup_file_name
+        )
+
+    def _construct_nodes_array(self, ordered_dist_names, num_nodes):
+        """Construct final nodes array from values and distributions"""
+        nodes = []
+        
+        for node_name in self.nodeNames:
+            if node_name in self.values:
+                nodes.append([self.values[node_name]] * num_nodes)
+            
+            if node_name in self.dists:
+                if len(self.dists) == 1:
+                    nodes.append(self.distNodes)
+                else:
+                    idx = ordered_dist_names.index(node_name)
+                    nodes.append(self.distNodes[idx])
+        
+        return np.array(nodes)
+
+    def _apply_parameter_transformation(self):
+        """Apply transformation from standard to user-defined distributions"""
+        if self._performTransformation:
+            transformer = AdaptiveTransformation()
+            return transformer.transform(
+                self.nodes, 
+                self.joinedStandardDists, 
+                self.joinedDists
+            )
+        return self.nodes
+
+    ###################################
+    
     def generateNodesForMC(self, numSamples, rule="R", read_nodes_from_file=False, parameters_file_name=None,
                            parameters_setup_file_name=None):
         if self.numSamplesOrScDim == numSamples:
@@ -130,150 +207,85 @@ class Nodes(object):
         self.assertConfiguration()
         self.numSamplesOrScDim = numSamples
 
-        #order the distributes to get a defined order
-        orderdDists = []
-        orderdDistsNames = []
-        orderdStandardDists = []
-        for i in range(0, len(self.nodeNames)):
-            nameOfNode = self.nodeNames[i]
-            if nameOfNode in self.dists:
-                orderdDists.append(self.dists[nameOfNode])
-                orderdDistsNames.append(nameOfNode)
-                if self._performTransformation:
-                    orderdStandardDists.append(self.standardDists[nameOfNode])
 
-        stochastic_dim = len(orderdDists)  # len(list(self.dists.keys()))
+        # Extract distributions in order
+        ordered_dists, ordered_dist_names, ordered_standard_dists = self._order_distributions()
+        stochastic_dim = len(ordered_dists) # len(list(self.dists.keys()))
 
-        if len(self.dists) > 0:
-            self.joinedDists = cp.J(*orderdDists)
-            if self._performTransformation:
-                self.joinedStandardDists = cp.J(*orderdStandardDists)
-
-            if read_nodes_from_file and parameters_file_name is not None:
-                nodes_and_weights_array = np.loadtxt(parameters_file_name, delimiter=',')
-                self.nodes_read_from_file = nodes_and_weights_array[:, :stochastic_dim].T
-                self.weights_read_from_file = nodes_and_weights_array[:, stochastic_dim]
-                # transform nodes and weight you have read from the file
-                self.distNodes, self.weights = self._transform_nodes_and_weights_read_from_file(
-                    nodes_read_from_file=self.nodes_read_from_file, 
-                    weights_read_from_file=self.weights_read_from_file,
-                    performTransformation=self._performTransformation, 
-                    stochastic_dim=stochastic_dim, 
-                    parameters_setup_file_name=parameters_setup_file_name
-                    )
+        # Create joined distributions
+        if len(ordered_dists) > 0:
+            self.joinedDists, self.joinedStandardDists = self._create_joined_distributions(
+                ordered_dists, ordered_standard_dists
+            )
+            
+            # Generate or load nodes
+            if read_nodes_from_file and parameters_file_name:
+                self.distNodes, self.weights = self._load_nodes_from_file(
+                    parameters_file_name, stochastic_dim, parameters_setup_file_name
+                )
                 self.numSamplesOrScDim = len(self.distNodes[0])
             else:
-                if self._performTransformation:
-                    self.distNodes = self.joinedStandardDists.sample(size=numSamples, rule=rule)#.round(4)
-                else:
-                    #self.distNodes = self.joinedDists.sample(numSamples, rule=rule).round(4)
-                    #self.distNodes = cp.generate_samples(order=numSamples, domain=self.joinedDists, rule=rule).round(4)
-                    self.distNodes = self.joinedDists.sample(size=numSamples, rule=rule)#.round(4)
-
-        nodes = []
-
-        for i in range(0, len(self.nodeNames)):
-            nameOfNode = self.nodeNames[i]
-
-            if nameOfNode in self.values:
-                nodes.append([self.values[nameOfNode]]*numSamples)
-
-            if nameOfNode in self.dists:
-                if len(self.dists) == 1:
-                    nodes.append(self.distNodes)
-                else:
-                    nodes.append(self.distNodes[orderdDistsNames.index(nameOfNode)])
-
-        self.nodes = np.array(nodes)
-        self.weights = np.array(self.weights)  # MC has no weights, but after generation, we want an array
-
-        if self._performTransformation:
-            # self.parameters = self.transformParameters(orderdDistsNames, self.nodes)
-            self.parameters = Nodes.transformSamples(self.nodes, self.joinedStandardDists, self.joinedDists)
-        else:
-            self.parameters = self.nodes
-
+                dist_for_sampling = (self.joinedStandardDists 
+                                if self._performTransformation 
+                                else self.joinedDists)
+                self.distNodes = dist_for_sampling.sample(size=numSamples, rule=rule)
+        
+        # Construct final nodes array
+        num_nodes = len(self.distNodes[0]) if len(self.distNodes) > 0 else numSamples
+        self.nodes = self._construct_nodes_array(ordered_dist_names, num_nodes)
+        self.weights = np.array(self.weights)
+        
+        # Apply transformations
+        self.parameters = self._apply_parameter_transformation()
+        
         return self.nodes, self.parameters
-
-    def generateNodesForSC(self, numCollocationPointsPerDim, rule="G", sparse=False, read_nodes_from_file=False,
-                           parameters_file_name=None, parameters_setup_file_name=None):
-
+        
+    def generateNodesForSC(self, numCollocationPointsPerDim, rule="G", sparse=False,
+                        read_nodes_from_file=False, parameters_file_name=None,
+                        parameters_setup_file_name=None):
         if self.numSamplesOrScDim == numCollocationPointsPerDim:
             return self.nodes, self.weights, self.parameters
-
+        
         self.numSamplesOrScDim = numCollocationPointsPerDim
-
-        orderdDists = []
-        orderdDistsNames = []
-        orderdStandardDists = []
-        # self.joinedDists = []
-        # self.distNodes = []
-        # self.weights = []
-        for i in range(0, len(self.nodeNames)):
-            nameOfNode = self.nodeNames[i]
-            if nameOfNode in self.dists:
-                orderdDists.append(self.dists[nameOfNode])
-                orderdDistsNames.append(nameOfNode)
-                if self._performTransformation:
-                    orderdStandardDists.append(self.standardDists[nameOfNode])
-
-        if len(self.dists) > 0:
-            self.joinedDists = cp.J(*orderdDists)
+        
+        # Extract distributions in order
+        ordered_dists, ordered_dist_names, ordered_standard_dists = self._order_distributions()
+        stochastic_dim = len(ordered_dists)
+        
+        # Create joined distributions
+        if len(ordered_dists) > 0:
+            self.joinedDists, self.joinedStandardDists = self._create_joined_distributions(
+                ordered_dists, ordered_standard_dists
+            )
+            
             self.__save__cpu_affinity()
-            growth = True if (rule == "c" and not sparse) else False  # according to: https://github.com/jonathf/chaospy/issues/139
-
-            if self._performTransformation:
-                self.joinedStandardDists = cp.J(*orderdStandardDists)
-
-            stochastic_dim = len(orderdDists)  # len(list(self.dists.keys()))
-
-            if read_nodes_from_file and parameters_file_name is not None:
-                nodes_and_weights_array = np.loadtxt(parameters_file_name, delimiter=',')
-                self.nodes_read_from_file = nodes_and_weights_array[:, :stochastic_dim].T
-                self.weights_read_from_file = nodes_and_weights_array[:, stochastic_dim]
-                # transform nodes and weight you have read from the file
-                self.distNodes, self.weights = self._transform_nodes_and_weights_read_from_file(
-                    nodes_read_from_file=self.nodes_read_from_file, 
-                    weights_read_from_file=self.weights_read_from_file,
-                    performTransformation=self._performTransformation, 
-                    stochastic_dim=stochastic_dim, 
-                    parameters_setup_file_name=parameters_setup_file_name
-                    )
-                # TODO Update self.numSamplesOrScDim based on what is read from file!
-                self.numSamplesOrScDim = numCollocationPointsPerDim
+            growth = True if (rule == "c" and not sparse) else False
+            
+            # Generate or load nodes
+            if read_nodes_from_file and parameters_file_name:
+                self.distNodes, self.weights = self._load_nodes_from_file(
+                    parameters_file_name, stochastic_dim, parameters_setup_file_name
+                )
             else:
-                if self._performTransformation:
-                    dist_for_quadrature = self.joinedStandardDists
-                else:
-                    dist_for_quadrature = self.joinedDists
+                dist_for_quadrature = (self.joinedStandardDists 
+                                    if self._performTransformation 
+                                    else self.joinedDists)
                 self.distNodes, self.weights = cp.generate_quadrature(
-                    numCollocationPointsPerDim, dist_for_quadrature, rule=rule, growth=growth, sparse=sparse)
-
+                    numCollocationPointsPerDim, dist_for_quadrature,
+                    rule=rule, growth=growth, sparse=sparse
+                )
+            
             self.__restore__cpu_affinity()
-
-        nodes = []
-        if len(self.distNodes) == 0:
-            numNodes = numCollocationPointsPerDim
-        else:
-            numNodes = len(self.distNodes[0])
-
-        for i in range(0, len(self.nodeNames)):
-            nameOfNode = self.nodeNames[i]
-
-            if nameOfNode in self.values:
-                nodes.append([self.values[nameOfNode]]*numNodes)
-
-            if nameOfNode in self.dists:
-                nodes.append(self.distNodes[orderdDistsNames.index(nameOfNode)])
-
-        self.nodes = np.array(nodes)
+        
+        # Construct final nodes array
+        num_nodes = (len(self.distNodes[0]) if len(self.distNodes) > 0 
+                    else numCollocationPointsPerDim)
+        self.nodes = self._construct_nodes_array(ordered_dist_names, num_nodes)
         self.weights = np.array(self.weights)
-
-        if self._performTransformation:
-            self.parameters = Nodes.transformSamples(self.nodes, self.joinedStandardDists, self.joinedDists)
-        else:
-            self.parameters = self.nodes
-
+        
+        # Apply transformations
+        self.parameters = self._apply_parameter_transformation()
+        
         return self.nodes, self.weights, self.parameters
 
     def generateNodesFromListOfValues(self, read_nodes_from_file=False,
@@ -298,99 +310,29 @@ class Nodes(object):
     def get_nodes_and_parameters(self):
         return self.nodes, self.parameters
 
-    def transformParameters(self, orderdDistsNames, nodes):
-        transformedNodes = np.array(nodes, copy=True)
-        for i in range(0, len(self.nodeNames)):
-            nameOfNode = self.nodeNames[i]
-            if nameOfNode in self.dists:
-                transformedNodes[orderdDistsNames.index(nameOfNode)] = \
-                    self.transformationFunctions[nameOfNode](transformedNodes[orderdDistsNames.index(nameOfNode)], \
-                                                             self.transformationParameters[nameOfNode][0], \
-                                                             self.transformationParameters[nameOfNode][1])
-        return np.array(transformedNodes)
-
-    @staticmethod
-    def transformSamples_lin_or_nonlin(samples, distribution_r, distribution_q, linear=True):
-        """
-        Note: Linear transformation only covers the case of transforming r.v. distributed accoring to some
-         Uniform distribution to standard Uniform distribution (U[-1,1] or U[0,1])
-        """
-        if linear:
-            dim = len(distribution_r)
-            assert len(distribution_r) == len(distribution_q)
-            _a = np.empty([dim, 1])
-            _b = np.empty([dim, 1])
-
-            for i in range(dim):
-                r_lower = distribution_r[i].lower
-                r_upper = distribution_r[i].upper
-                q_lower = distribution_q[i].lower
-                q_upper = distribution_q[i].upper
-
-                if r_lower == -1:
-                    _a[i] = (q_lower + q_upper) / 2
-                    _b[i] = (q_upper - q_lower) / 2
-                elif r_lower == 0:
-                    _a[i] = q_lower
-                    _b[i] = (q_upper - q_lower)
-
-            return _a + _b * samples
-        else:
-            return distribution_q.inv(distribution_r.fwd(samples))
-
-    @staticmethod
-    def transformSamples(samples, distribution_r, distribution_q):
-        """
-        https://chaospy.readthedocs.io/en/master/user_guide/advanced_topics/generalized_polynomial_chaos.html
-        :param samples: array of samples from distribution_r
-        :param distribution_r: 'standard' distribution
-        :param distribution_q: 'user-defined' distribution
-        :return: array of samples from distribution_q
-        """
-        # TODO Think if transformation should be done dimension wise
-        return distribution_q.inv(distribution_r.fwd(samples))
-
-    @staticmethod
-    def transformSamples_from_uniform(samples, distribution_r, distribution_q):
-        """
-        :param samples: array of samples from distribution_r, when distribution_r is U[-1,1] or U[0,1]
-        :param distribution_r: 'standard' distribution either U[-1,1] or U[0,1]
-        :param distribution_q: 'user-defined' distribution
-        :return: array of samples from distribution_q
-        """
-        dim = len(distribution_r)
-        assert len(distribution_r) == len(distribution_q)
-        _a = np.empty([dim, 1])
-        _b = np.empty([dim, 1])
-
-        for i in range(dim):
-            r_lower = distribution_r[i].lower
-            q_lower = distribution_q[i].lower
-            q_upper = distribution_q[i].upper
-
-            if r_lower == -1:
-                _a[i] = (q_lower + q_upper) / 2
-                _b[i] = (q_upper - q_lower) / 2
-            elif r_lower == 0:
-                _a[i] = q_lower
-                _b[i] = (q_upper - q_lower)
-
-        return _a + _b * samples
+    #######################################
 
     def _transform_nodes_and_weights_read_from_file(
         self, nodes_read_from_file, weights_read_from_file, 
         performTransformation, stochastic_dim, parameters_setup_file_name=None):
         """
+        Transform nodes and weights read from file to match desired distributions.
         Important function when reading position of the nodes from some file. Ensure that these nodes are distributed
         according to desired distribution specified in the configuration file.
-
-        :nodes_read_from_file: Nodes read from file
-        :param performTransformation: If True, then the nodes are transformed to the desired 'standard' distribution
-        and just later on the parameters used to stimulate the model are transformed to the desired 'user-defined' distribution
-        :param stochastic_dim:
-        :param parameters_setup_file_name: From this file we read a setup/distribution according to which the read nodes are distributed
-        :return:
+        
+        Args:
+            nodes_read_from_file: Nodes loaded from file
+            weights_read_from_file: Weights loaded from file
+            performTransformation: If True, then the nodes are transformed to the desired 'standard' distribution 
+            and just later on the parameters used to stimulate the model are transformed to the desired 'user-defined' distribution
+            stochastic_dim: Number of stochastic dimensions
+            parameters_setup_file_name: Optional JSON config file specifying 
+                                    source distributions
+        
+        Returns:
+            Tuple of (transformed_nodes, weights)
         """
+        # TODO This function needs refactoring for better clarity and efficiency
         distsOfNodesFromFile = []
         if parameters_setup_file_name is not None:
             with open(parameters_setup_file_name) as f:
@@ -411,14 +353,16 @@ class Nodes(object):
         jointDistOfNodesFromFile = cp.J(*distsOfNodesFromFile)
 
         if performTransformation:
-            distNodes = Nodes.transformSamples(
+            distNodes = AdaptiveTransformation().transform(
                 nodes_read_from_file, jointDistOfNodesFromFile, self.joinedStandardDists)
             weights = weights_read_from_file
         else:
-            distNodes = Nodes.transformSamples(
+            distNodes = AdaptiveTransformation().transform(
                 nodes_read_from_file, jointDistOfNodesFromFile, self.joinedDists)
             weights = weights_read_from_file
         return distNodes, weights
+
+    #######################################
 
     def __save__cpu_affinity(self):
         # Save cpu pinning: This is necessary, because through chaospy.generate_quadrature() -> scipy.linalg.eig_banded
