@@ -63,10 +63,15 @@ class AdaptiveTransformation(TransformationStrategy):
         return self.general.transform(samples, source_dist, target_dist)
     
     def _is_uniform_pair(self, source_dist, target_dist):
-        # Check if both are uniform distributions
+        # Check that all distributions are Uniform pairs (not LogUniform).
+        # Both standard (Uniform(0,1) or Uniform(-1,1)) and target must be linear Uniform.
+        # LogUniform also has .lower, so we must check the source lower bound is 0 or -1.
         try:
-            for dist in source_dist:
-                if not hasattr(dist, 'lower'):
+            for src_d, tgt_d in zip(source_dist, target_dist):
+                src_lower = src_d.lower
+                if src_lower not in (0, -1):
+                    return False
+                if not hasattr(tgt_d, 'lower') or not hasattr(tgt_d, 'upper'):
                     return False
             return True
         except:
