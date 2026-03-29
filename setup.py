@@ -21,6 +21,7 @@ setup(
         'mpi4py',
         'numpy',
         'scipy',
+        'seaborn',
         'setuptools',
         'tabulate'
     ],
