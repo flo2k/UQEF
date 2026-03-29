@@ -153,7 +153,7 @@ python your_script.py --config_file config.json --uq_method sc --sc_q_order 3
 
 Run a Monte Carlo simulation with 1000 samples:
 ```bash
-python -m uqef.UQsim --uq_method mc --mc_numevaluations 1000 --parallel --num_cores 4
+python your_script.py --uq_method mc --mc_numevaluations 1000 --parallel --num_cores 4
 ```
 
 Run the pseudo-spectral approach simulation with MPI:
@@ -381,7 +381,7 @@ This project is licensed under the MIT License. See the `LICENSE.txt` file for d
 
 ## Author
 
-**Florian Kuenzner**
+**Florian Künzner**
 Technical University of Munich (TUM), Rosenheim Technical University of Applied Sciences
 Email: florian.kuenzner@th-rosenheim.de
 
@@ -428,8 +428,7 @@ UQEF builds upon several excellent open-source projects:
 
 The following projects and research efforts are built using **UQEF**:
 
-- [UQEF-Dynamic](https://github.com/ivanajovanovic/UQEF-Dynamic) — this 
-software tool extends the capabilities of the UQEF to handle time-dependent processes. It supports several advanced uncertainty quantification methods, including the construction of Karhunen–Loève expansions to reduce the dimensionality of quantities of interest (QoIs). It also enables the derivation of time-varying Sobol sensitivity indices using both sampling-based (throug the Saltelli's approacha or rank-based approach) and PCE–based estimators, as well as generalized Sobol indices for vector- and function-valued QoIs.
+- [UQEF-Dynamic](https://github.com/ivanajovanovic/UQEF-Dynamic) — this software tool extends the capabilities of the UQEF to handle time-dependent processes. It supports several advanced uncertainty quantification methods, including the construction of Karhunen–Loève expansions to reduce the dimensionality of quantities of interest (QoIs). It also enables the derivation of time-varying Sobol sensitivity indices using both sampling-based (throug the Saltelli's approacha or rank-based approach) and PCE–based estimators, as well as generalized Sobol indices for vector- and function-valued QoIs.
 
 
 ## Version History
