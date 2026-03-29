@@ -82,7 +82,7 @@ class MpiPoolSolver(Solver):
         self.version = MPI.Get_library_version()
 
         if self.rank == 0:
-            self.infoModel = model_generator()
+            self.info_model = model_generator()
 
         self.numCores = num_cores
 
@@ -104,7 +104,7 @@ class MpiPoolSolver(Solver):
     def prepare(self, parameters):
         self.parameters = parameters
         if self.rank == 0:
-            self.infoModel.prepare(info_model=True)
+            self.info_model.prepare(info_model=True)
 
     def solve(self, runtime_estimator=None, chunksize=1,
               algorithm=schedule.Algorithm.FCFS, strategy=schedule.Strategy.DYNAMIC):
@@ -225,7 +225,7 @@ class MpiPoolSolver(Solver):
                 self.results = results
                 # print "results: " + str(np.array(results, dtype=object).shape)
                 # print "results: " + str(self.results)
-                # self._timesteps = self.infoModel.timesteps()
+                # self._timesteps = self.info_model.timesteps()
 
                 solver_time = solver_time_end - solver_time_start
                 # solver_time -= self.solverTimes.T_C
@@ -256,13 +256,13 @@ class MpiPoolSolver(Solver):
     def _assertParameters(self, parameters):
         if self.rank == 0:
             for parameter in parameters:
-                self.infoModel.assertParameter(parameter)
+                self.info_model.assertParameter(parameter)
 
     def _normaliseParameters(self, parameters):
         norm_paras = []
         if self.rank == 0:
             for parameter in parameters:
-                norm_para = self.infoModel.normaliseParameter(parameter)
+                norm_para = self.info_model.normaliseParameter(parameter)
                 norm_paras.append(norm_para)
 
         return np.array(norm_paras)
@@ -272,5 +272,5 @@ class MpiPoolSolver(Solver):
 
     def timesteps(self):
         if self.rank == 0:
-            self._timesteps = self.infoModel.timesteps()
+            self._timesteps = self.info_model.timesteps()
         return self._timesteps

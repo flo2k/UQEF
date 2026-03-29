@@ -29,7 +29,7 @@ class LinearSolver(Solver):
 
         self.solverTimes.parallel_solvers_per_work_package = np.array([1])
         
-        self.infoModel = model_generator()
+        self.info_model = model_generator()
 
     def getSetup(self):
         return "%s" % (type(self).__name__)
@@ -42,7 +42,7 @@ class LinearSolver(Solver):
         
     def prepare(self, parameters):
         self.parameters = parameters
-        self.infoModel.prepare(info_model=True)
+        self.info_model.prepare(info_model=True)
         
     def solve(self, runtime_estimator=None, chunksize=1,
               algorithm=schedule.Algorithm.FCFS, strategy=schedule.Strategy.FIXED_LINEAR):
@@ -93,7 +93,7 @@ class LinearSolver(Solver):
         for c in chunks:
             i_s, p_s = c
             solver_time_start2 = time.time()
-            chunk_results = self.infoModel.run(i_s, p_s)
+            chunk_results = self.info_model.run(i_s, p_s)
             solver_time_end2 = time.time()
             solver_time2 += (solver_time_end2 - solver_time_start2)
             for result in chunk_results:
@@ -136,22 +136,22 @@ class LinearSolver(Solver):
 
         # remember results
         self.results = results
-        # self._timesteps = self.infoModel.timesteps()
+        # self._timesteps = self.info_model.timesteps()
 
     def _assertParameters(self, parameters):
         for parameter in parameters:
-            self.infoModel.assertParameter(parameter)
+            self.info_model.assertParameter(parameter)
 
     def _normaliseParameters(self, parameters):
         norm_paras = []
         for parameter in parameters:
-            norm_para = self.infoModel.normaliseParameter(parameter)
+            norm_para = self.info_model.normaliseParameter(parameter)
             norm_paras.append(norm_para)
 
         return np.array(norm_paras)
 
     def timesteps(self):
-        self._timesteps = self.infoModel.timesteps()
+        self._timesteps = self.info_model.timesteps()
         return self._timesteps
 
     def estimate_TProp(self, runtime_estimator=None, chunksize=1):

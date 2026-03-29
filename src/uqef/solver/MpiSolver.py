@@ -62,7 +62,7 @@ class MpiSolver(Solver):
         self.version = MPI.Get_library_version()
 
         if self.rank == 0:
-            self.infoModel = model_generator()
+            self.info_model = model_generator()
 
         self.numCores = num_cores
         print("rank {} uses numCores: {}".format(self.rank, self.numCores))
@@ -82,7 +82,7 @@ class MpiSolver(Solver):
     def prepare(self, parameters):
         self.parameters = parameters
         if self.rank == 0:
-            self.infoModel.prepare(info_model=True)
+            self.info_model.prepare(info_model=True)
 
     def solve(self, runtime_estimator=None, chunksize=1,
               algorithm=schedule.Algorithm.FCFS, strategy=schedule.Strategy.FIXED_LINEAR):
@@ -189,7 +189,7 @@ class MpiSolver(Solver):
             self.results = results
             #print "results: " + str(np.array(results, dtype=object).shape)
             #print "results: " + str(self.results)
-            # self._timesteps = self.infoModel.timesteps()
+            # self._timesteps = self.info_model.timesteps()
 
         if self.rank == 0:
             #scatter_time = scatter_time_end - scatter_time_start
@@ -226,12 +226,12 @@ class MpiSolver(Solver):
 
     def _assertParameters(self, parameters):
         for parameter in parameters:
-            self.infoModel.assertParameter(parameter)
+            self.info_model.assertParameter(parameter)
 
     def _normaliseParameters(self, parameters):
         norm_paras = []
         for parameter in parameters:
-            norm_para = self.infoModel.normaliseParameter(parameter)
+            norm_para = self.info_model.normaliseParameter(parameter)
             norm_paras.append(norm_para)
 
         return np.array(norm_paras)
@@ -240,5 +240,5 @@ class MpiSolver(Solver):
         pass
 
     def timesteps(self):
-        self._timesteps = self.infoModel.timesteps()
+        self._timesteps = self.info_model.timesteps()
         return self._timesteps
