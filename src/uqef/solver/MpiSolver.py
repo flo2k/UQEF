@@ -199,7 +199,7 @@ class MpiSolver(Solver):
 
             solver_time = solver_time_end - solver_time_start
             #solver_time -= self.solverTimes.T_C
-            print("xx solver_time: {}".format(solver_time))
+            print("solver_time: {}".format(solver_time))
             sys.stdout.flush()
 
             self.solverTimes.T_i_S = np.array(runtimes)
