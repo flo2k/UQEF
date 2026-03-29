@@ -75,5 +75,5 @@ class ScSimulation(Simulation):
                                        cross_truncation=self.cross_truncation,
                                        *args, **kwargs)
         
-        return statistics  # TODO remove return?
+        return statistics
 

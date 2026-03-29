@@ -58,7 +58,7 @@ class ParallelSolver(Solver):
 
     def prepare(self, parameters):
         self.parameters = parameters
-        self.infoModel.prepare()
+        self.infoModel.prepare(info_model=True)
 
     def solve(self, runtime_estimator=None, chunksize=1,
               algorithm=schedule.Algorithm.FCFS, strategy=schedule.Strategy.DYNAMIC):

@@ -70,4 +70,4 @@ class McSimulation(Simulation):
                                        poly_normed=self.poly_normed, poly_rule=self.poly_rule, cross_truncation=self.cross_truncation,
                                        *args, **kwargs)
 
-        return statistics  # TODO remove return?
+        return statistics

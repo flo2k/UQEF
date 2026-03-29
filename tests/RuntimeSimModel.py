@@ -43,7 +43,7 @@ class RuntimeSimModel(uqef.model.Model):
         #intrinsic error
         self.runtimesim_intrinsic_error = runtimesim_intrinsic_error
 
-    def prepare(self):
+    def prepare(self, *args, **kwargs):
         pass
 
     def assertParameter(self, parameter):

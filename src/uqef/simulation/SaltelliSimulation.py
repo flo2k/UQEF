@@ -83,18 +83,18 @@ class SaltelliSimulation(Simulation):
                                                   self.poly_normed, self.poly_rule, cross_truncation=self.cross_truncation, *args, **kwargs)
 
     def calculateStatistics(self, statistics, simulationNodes, original_runtime_estimator=None, *args, **kwargs):
-            model_results = self.solver.results
-            timesteps = self.solver.timesteps()
-            solverTimes = self.solver.solverTimes
-            self.original_runtime_estimator = original_runtime_estimator
+        model_results = self.solver.results
+        timesteps = self.solver.timesteps()
+        solverTimes = self.solver.solverTimes
+        self.original_runtime_estimator = original_runtime_estimator
 
-            statistics.calcStatisticsForMcSaltelli(model_results, timesteps, simulationNodes,
-                                                   self.numEvaluations, self.p_order,
-                                                   self.regression, solverTimes,
-                                                   self.solver.work_package_indexes, self.original_runtime_estimator, 
-                                                   poly_normed=self.poly_normed, poly_rule=self.poly_rule, cross_truncation=self.cross_truncation,
-                                                   *args, **kwargs)
-            return statistics  # TODO remove return?
+        statistics.calcStatisticsForMcSaltelli(model_results, timesteps, simulationNodes,
+                                                self.numEvaluations, self.p_order,
+                                                self.regression, solverTimes,
+                                                self.solver.work_package_indexes, self.original_runtime_estimator, 
+                                                poly_normed=self.poly_normed, poly_rule=self.poly_rule, cross_truncation=self.cross_truncation,
+                                                *args, **kwargs)
+        return statistics
 
     @staticmethod
     def _get_matrix(matrix_A, matrix_B, indices):

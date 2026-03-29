@@ -104,7 +104,7 @@ class MpiPoolSolver(Solver):
     def prepare(self, parameters):
         self.parameters = parameters
         if self.rank == 0:
-            self.infoModel.prepare(infoModel=True)
+            self.infoModel.prepare(info_model=True)
 
     def solve(self, runtime_estimator=None, chunksize=1,
               algorithm=schedule.Algorithm.FCFS, strategy=schedule.Strategy.DYNAMIC):

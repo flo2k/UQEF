@@ -153,8 +153,8 @@ def MULTIFIT(T, m, k=100):
     :param k: is the number of iterations to find the near optimum schedule
     :return: P - the near optimal partitioned indices packages (work packages) (P contains only the indices, for T)
     """
-    Cl = max((1. / m) * np.asscalar(np.sum(T)), np.max(T))  # Cl = lower bound
-    Cu = max((2. / m) * np.asscalar(np.sum(T)), np.max(T))  # Cu = upper bound
+    Cl = max((1. / m) * np.sum(T).item(), np.max(T)) # Cl = lower bound
+    Cu = max((2. / m) * np.sum(T).item(), np.max(T))  # Cu = upper bound
 
     # TODO: This algorithm could be optimized by checking if Cl and Cu has changed, to not
     #       do the k iterations even if it is not necessary.
