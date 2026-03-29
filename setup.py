@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='uqef',
-    version="1.0",
+    version="1.0.0",
     url='https://gitlab.lrz.de/tum-i05/software/UQEF',
     author="Florian Künzner",
     author_email='florian.kuenzner@tum.de',
@@ -20,6 +20,8 @@ setup(
         'more-itertools',
         'mpi4py',
         'numpy',
+        'psutil',
+        'scikit-learn',
         'scipy',
         'seaborn',
         'setuptools',

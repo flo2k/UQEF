@@ -401,7 +401,7 @@ If you use UQEF in your research, please cite:
 @software{uqef,
   author = {Kuenzner, Florian},
   title = {UQEF: Uncertainty Quantification Execution Framework},
-  version = {1.0},
+  version = {1.0.0},
   url = {https://github.com/flo2k/UQEF.git},
   institution = {Technical University of Munich, Rosenheim Technical University of Applied Sciences}
 }
