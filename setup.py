@@ -6,7 +6,7 @@ setup(
     name='uqef',
     version="1.0",
     url='https://gitlab.lrz.de/tum-i05/software/UQEF',
-    author="Florian Kuenzner",
+    author="Florian Künzner",
     author_email='florian.kuenzner@tum.de',
     license='MIT',
     platforms='any',
