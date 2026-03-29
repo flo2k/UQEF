@@ -57,7 +57,7 @@ parser.add_argument('--mpi_chunksize'         , type=int, default=1)
 parser.add_argument('--uncertain'             , default='all')  # all, uncertain_param_1, uncertain_param_2
 parser.add_argument('--uq_method'             , default="sc")  # sc, mc
 parser.add_argument('--regression'            , action='store_true', default=False)
-parser.add_argument('--sampling_rule'  , default='random')  # "sobol" | "latin_hypercube" | "halton"  | "hammersley"
+parser.add_argument('--sampling_rule'         , default='random')  # "sobol" | "latin_hypercube" | "halton"  | "hammersley"
 parser.add_argument('--mc_numevaluations'     , type=int, default=27)
 parser.add_argument('--sc_q_order'            , type=int, default=2)  # number of collocation points in each direction (Q)
 parser.add_argument('--sc_p_order'            , type=int, default=1)  # number of terms in PCE (N)
