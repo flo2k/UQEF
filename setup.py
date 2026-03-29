@@ -4,8 +4,8 @@ from setuptools import setup, find_packages
 
 setup(
     name='uqef',
-    version="0.2",
-    url='https://gitlab.lrz.de/di73wal/UQEF',
+    version="1.0",
+    url='https://gitlab.lrz.de/tum-i05/software/UQEF',
     author="Florian Kuenzner",
     author_email='florian.kuenzner@tum.de',
     license='MIT',
@@ -13,16 +13,12 @@ setup(
     packages=find_packages("src"),
     package_dir={"": "src"},
     install_requires=[
-        'argparse',
         'chaospy',
         'dill',
-        'enum;python_version<"3.0"',
-        'itertool;python_version<"3.0"',
         'joblib',
         'matplotlib',
-        'more_itertools',
+        'more-itertools',
         'mpi4py',
-        'multiprocessing;python_version<"3.0"',
         'numpy',
         'scipy',
         'setuptools',

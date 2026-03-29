@@ -118,7 +118,7 @@ class TestModelStatistics(Statistics):
 
         self.Sobol_t_qoi = cp.Sens_t(self.qoi_gPCE, dist)
 
-    def calcStatisticsForSaltelli(self, rawSamples, timesteps,
+    def calcStatisticsForMcSaltelli(self, rawSamples, timesteps,
                             simulationNodes, numEvaluations, order, regression, solverTimes,
                             work_package_indexes, original_runtime_estimator=None,
                             *args, **kwargs):

@@ -1,5 +1,3 @@
-
-
 # parsing args
 import argparse
 
@@ -25,6 +23,7 @@ import inspect
 
 import json
 import dill
+import pickle
 
 #####################################
 ### MPI infos:
@@ -43,6 +42,7 @@ if rank == 0: print("mpi4py version: {}".format(mpi4py.__version__))
 
 print("rank {}: starttime: {}".format(rank, datetime.datetime.now().strftime('%Y.%m.%d %H:%M:%S')))
 
+
 def model_generator():
     return model_generator.model()
 
@@ -58,7 +58,7 @@ class UQsim(object):
 
         if self.args.uqsim_restore_from_file:
             self.restore_from_file()
-            self.parse_args() # reparse args to overwrite old arguments
+            self.parse_args()  # reparse args to overwrite old arguments
             self.__restored = True
         else:
             self.models = {
@@ -97,6 +97,7 @@ class UQsim(object):
         self.parser.add_argument('--uqsim_file'                , default="uqsim.saved")
         self.parser.add_argument('--uqsim_store_to_file'       , action='store_true', default=False)
         self.parser.add_argument('--uqsim_restore_from_file'   , action='store_true', default=False)
+        self.parser.add_argument('--disable_calc_statistics'   , action='store_true', default=False)
         self.parser.add_argument('--disable_recalc_statistics' , action='store_true', default=False)
         self.parser.add_argument('--disable_statistics'        , action='store_true', default=False)
 
@@ -113,7 +114,7 @@ class UQsim(object):
 
         # UQ method and uncertain parameter settings
         self.parser.add_argument('--uncertain'                 , default='all')
-        self.parser.add_argument('--uq_method'                 , default="sc")  # sc, mc, saltelli
+        self.parser.add_argument('--uq_method'                 , default="sc")  # sc, mc, saltelli, ensemble
         self.parser.add_argument('--regression'                , action='store_true', default=False)
         self.parser.add_argument('--mc_numevaluations'         , type=int, default=27)
         self.parser.add_argument('--sc_q_order'                , type=int, default=2)  # number of collocation points in each direction (Q)
@@ -122,9 +123,15 @@ class UQsim(object):
         self.parser.add_argument('--sc_quadrature_rule'        , default='G')
         self.parser.add_argument('--sc_poly_normed'            , action='store_true', default=False)
         self.parser.add_argument('--sc_poly_rule'              , default="three_terms_recurrence") # "gram_schmidt" | "three_terms_recurrence" | "cholesky"
+        self.parser.add_argument('--cross_truncation'          , type=float, default=1.0)
+        self.parser.add_argument('--regression_model_type'     , type=str, default=None)  # None | "OLS" | "LARS" -> has to be implemented in custom statistics implementations (used feature from chaospy)
         self.parser.add_argument('--sampling_rule'             , default='random')  # "sobol" | "latin_hypercube" | "halton"  | "hammersley"
         self.parser.add_argument('--transformToStandardDist'   , action='store_true', default=False)
+        self.parser.add_argument('--sampleFromStandardDist'    , action='store_true', default=False)
         self.parser.add_argument('--config_file')
+        self.parser.add_argument('--read_nodes_from_file'      , action='store_true', default=False)
+        self.parser.add_argument('--parameters_file')
+        self.parser.add_argument('--parameters_setup_file')
 
         # Solver settings
         self.parser.add_argument('--parallel'                  , action='store_true', default=False)
@@ -132,6 +139,18 @@ class UQsim(object):
         self.parser.add_argument('--mpi'                       , action='store_true')
         self.parser.add_argument('--mpi_method'                , default="MpiPoolSolver")  # MpiPoolSolver: DWP, MpiSolver: SWP, SWPT
         self.parser.add_argument('--mpi_combined_parallel'     , action='store_true', default=False)
+
+        # Statistics settings
+
+        self.parser.add_argument('--instantly_save_results_for_each_time_step'       , action='store_true', default=False)
+        self.parser.add_argument('--parallel_statistics'       , action='store_true', default=False)
+        self.parser.add_argument('--compute_Sobol_t'           , action='store_true', default=False) # has to be implemented in custom statistics implementations
+        self.parser.add_argument('--compute_Sobol_m'           , action='store_true', default=False) # has to be implemented in custom statistics implementations
+        self.parser.add_argument('--compute_Sobol_m2'          , action='store_true', default=False) # has to be implemented in custom statistics implementations
+        self.parser.add_argument('--save_all_simulations'      , action='store_true', default=False)  # This might be a lot of data
+        self.parser.add_argument('--store_qoi_data_in_stat_dict'      , action='store_true', default=False)
+        self.parser.add_argument('--store_gpce_surrogate_in_stat_dict'      , action='store_true', default=False)  # Only relevant for sc mode when the gPCE surrogate is produced
+        self.parser.add_argument('--collect_and_save_state_data'      , action='store_true', default=False)  # Only relevant for models which produce some state data as well
 
         # Chunk parameters
         self.parser.add_argument('--chunksize'                 , type=int, default=1)
@@ -146,6 +165,9 @@ class UQsim(object):
 
     def is_master(self):
         return self.args.mpi is False or (self.args.mpi is True and rank == 0)
+
+    def get_size(self):
+        return size
 
     def is_restored(self):
         return self.__restored
@@ -164,12 +186,12 @@ class UQsim(object):
             print("rank: {} is master!".format(rank))
 
     def setup(self):
-        if not self.is_restored() and self.args.uqsim_restore_from_file is True: # for locally configured restore
+        if not self.is_restored() and self.args.uqsim_restore_from_file is True:  # for locally configured restore
             self.restore_from_file()
             self.__restored = True
         if not self.is_restored():
             self.setup_configuration_object()
-            self.setup_nodes_via_config_file()
+            self.setup_nodes_via_config_file_or_parameters_file()
             self.setup_path()
             self.setup_model()
             self.setup_parallelisation()
@@ -206,7 +228,7 @@ class UQsim(object):
     def setup_nodes(self, node_names):
         self.simulationNodes = uqef.nodes.Nodes(node_names)
 
-    def setup_nodes_via_config_file(self):
+    def setup_nodes_via_config_file_or_parameters_file(self):
         if self.is_master() and self.configuration_object is not None:
             print("Config nodes via config file: {}".format(self.args.config_file))
 
@@ -216,46 +238,71 @@ class UQsim(object):
                 node_names.append(parameter_config["name"])
             self.setup_nodes(node_names)
 
-            # node values and distributions -> automatically maps dists and their parameters by reflection mechanisms
-            for parameter_config in self.configuration_object["parameters"]:
-                if parameter_config["distribution"] == "None":
-                    self.simulationNodes.setValue(parameter_config["name"], parameter_config["default"])
-                else:
-                    cp_dist_signature = inspect.signature(getattr(cp, parameter_config["distribution"]))
-                    dist_parameters_values = []
-                    for p in cp_dist_signature.parameters:
-                        dist_parameters_values.append(parameter_config[p])
+            if self.args.uq_method == "ensemble" and self.args.read_nodes_from_file and self.args.parameters_file:
+                # reading values of the nodes form a file
+                print("Reading nodes values from parameters file {}".format(self.args.parameters_file))
+                self.simulationNodes.generateNodesFromListOfValues(
+                    read_nodes_from_file=self.args.read_nodes_from_file,
+                    parameters_file_name=self.args.parameters_file)
+            else:
+                # branch for all other uq_methods ('sc', 'mc', 'saltelli')
+                # and 'ensemble' when parameters_file is not specified
+                if self.args.sampleFromStandardDist:
+                    self.simulationNodes.setTransformation()
 
-                    if self.args.transformToStandardDist:
-                        # TODO: Implement transformation in more elegant and general way
-                        if parameter_config["distribution"] == "Normal":
-                            self.simulationNodes.setDist(parameter_config["name"],
-                                                     getattr(cp, parameter_config["distribution"])())
-                            transformation_param_tuple = (parameter_config["mu"], parameter_config["sigma"])
-                            transformation_distribution = lambda x, mu, std: mu + std * x
-                        elif parameter_config["distribution"] == "Uniform":
-                            if self.args.uq_method == "sc":
-                                self.simulationNodes.setDist(parameter_config["name"],
-                                                         getattr(cp, parameter_config["distribution"])(lower=-1, upper=1))
-                                _a = (parameter_config["lower"] + parameter_config["upper"]) / 2
-                                _b = (parameter_config["upper"] - parameter_config["lower"]) / 2
-                            else:
-                                self.simulationNodes.setDist(parameter_config["name"],
-                                                         getattr(cp, parameter_config["distribution"])(lower=0, upper=1))
-                                _a = parameter_config["lower"]
-                                _b = (parameter_config["upper"] - parameter_config["lower"])
-                            transformation_param_tuple = (_a, _b)
-                            transformation_distribution = lambda x, mu, std: mu + std * x
+                for parameter_config in self.configuration_object["parameters"]:
+                    if self.args.uq_method == "ensemble":
+                        if "values_list" in parameter_config:
+                            self.simulationNodes.setValue(parameter_config["name"], parameter_config["values_list"])
+                        elif "default" in parameter_config:
+                            self.simulationNodes.setValue(parameter_config["name"], parameter_config["default"])
                         else:
-                            transformation_param_tuple = (parameter_config["default_mu"], parameter_config["default_sigma"])
-                            transformation_distribution = lambda x, mu, std: mu + std * x
-
-                        self.simulationNodes.setTransformation(parameter_config["name"], transformation_param_tuple, transformation_distribution)
-
+                            raise Exception(f"Error in UQsim.setup_nodes_via_config_file_or_parameters_file() : "
+                                            f" an ensemble simulation should be run, "
+                                            f"but values_list or default entries for parameter values are missing")
+                    elif parameter_config["distribution"] == "None":
+                        # take default value(s) from config file
+                        if "values_list" in parameter_config:
+                            self.simulationNodes.setValue(parameter_config["name"], parameter_config["values_list"])
+                        elif 'default' in parameter_config:
+                            self.simulationNodes.setValue(parameter_config["name"], parameter_config["default"])
+                        else:
+                            raise Exception(f"Error in UQsim.setup_nodes_via_config_file_or_parameters_file() : "
+                                            f" distribution of a parameter is None, "
+                                            f"but values_list or default entries are missing")
                     else:
+                        # node values and distributions -> automatically maps dists and their parameters by reflection mechanisms
+                        cp_dist_signature = inspect.signature(getattr(cp, parameter_config["distribution"]))
+                        dist_parameters_values = []
+                        for p in cp_dist_signature.parameters:
+                            dist_parameters_values.append(parameter_config[p])
+
                         self.simulationNodes.setDist(parameter_config["name"],
                                                      getattr(cp, parameter_config["distribution"])(
                                                          *dist_parameters_values))
+
+                        if self.args.sampleFromStandardDist:
+                            # for numerical stability work with nodes from 'standard' distributions,
+                            # and use parameters for forcing the model
+                            if parameter_config["distribution"] == "Uniform":
+                                if (self.args.uq_method == "sc") or (self.args.uq_method == "mc" and self.args.regression):  # Gauss–Legendre quadrature
+                                    self.simulationNodes.setStandardDist(parameter_config["name"],
+                                                                         getattr(cp, parameter_config["distribution"])(
+                                                                             lower=-1, upper=1
+                                                                         ))
+                                else:
+                                    self.simulationNodes.setStandardDist(parameter_config["name"],
+                                                                         getattr(cp, parameter_config["distribution"])(
+                                                                             lower=0, upper=1
+                                                                         ))
+                            else:
+                                self.simulationNodes.setStandardDist(parameter_config["name"],
+                                                                     getattr(cp, parameter_config["distribution"])())
+
+                if self.args.uq_method == "ensemble":
+                    # in case of an ensemble method, when parameters_file is not specified,
+                    # take a cross product of values_list of all parameters
+                    self.simulationNodes.generateNodesFromListOfValues()
 
     def setup_model(self):
         model_generator.model = self.models[self.args.model]
@@ -263,10 +310,12 @@ class UQsim(object):
     def setup_solver(self):
         if self.args.mpi is True:
             solvers = {
-                "MpiPoolSolver": (lambda: uqef.solver.MpiPoolSolver(model_generator, mpi_chunksize=self.args.mpi_chunksize,
-                                                          combinedParallel=self.args.mpi_combined_parallel, num_cores=self.args.num_cores))
-               ,"MpiSolver"    : (lambda: uqef.solver.MpiSolver(model_generator, mpi_chunksize=self.args.mpi_chunksize,
-                                                         combinedParallel=self.args.mpi_combined_parallel, num_cores=self.args.num_cores))
+                "MpiPoolSolver": (lambda: uqef.solver.MpiPoolSolver(
+                    model_generator, mpi_chunksize=self.args.mpi_chunksize,
+                    combinedParallel=self.args.mpi_combined_parallel, num_cores=self.args.num_cores))
+               ,"MpiSolver"    : (lambda: uqef.solver.MpiSolver(
+                    model_generator, mpi_chunksize=self.args.mpi_chunksize,
+                    combinedParallel=self.args.mpi_combined_parallel, num_cores=self.args.num_cores))
             }
             self.solver = solvers[self.args.mpi_method]()
         elif self.args.parallel:
@@ -280,14 +329,37 @@ class UQsim(object):
     def setup_simulation(self):
         if self.is_master():
             simulations = {
-                "mc"      : (lambda: uqef.simulation.McSimulation(self.solver, self.args.mc_numevaluations, self.args.sc_p_order,
-                                                                  self.args.regression, rule=self.args.sampling_rule))
-               ,"sc"      : (lambda: uqef.simulation.ScSimulation(self.solver, self.args.sc_q_order, self.args.sc_p_order,
-                                                                  self.args.sc_quadrature_rule, self.args.sc_sparse_quadrature,
-                                                                  self.args.regression,
-                                                                  self.args.sc_poly_normed, self.args.sc_poly_rule))
-               ,"saltelli": (lambda: uqef.simulation.SaltelliSimulation(self.solver, self.args.mc_numevaluations, self.args.sc_p_order,
-                                                                        self.args.regression, rule=self.args.sampling_rule))
+                "mc"      : (lambda: uqef.simulation.McSimulation(
+                    self.solver,
+                    self.args.mc_numevaluations,
+                    self.args.sc_p_order,
+                    self.args.sampling_rule,
+                    self.args.regression,
+                    self.args.sc_poly_normed,
+                    self.args.sc_poly_rule,
+                    cross_truncation=self.args.cross_truncation,
+                    regression_model_type=self.args.regression_model_type))
+                , "sc"      : (lambda: uqef.simulation.ScSimulation(
+                    self.solver,
+                    self.args.sc_q_order,
+                    self.args.sc_p_order,
+                    self.args.sc_quadrature_rule,
+                    self.args.sc_sparse_quadrature,
+                    self.args.regression,
+                    self.args.sc_poly_normed,
+                    self.args.sc_poly_rule,
+                    cross_truncation=self.args.cross_truncation,
+                    regression_model_type=self.args.regression_model_type))
+                , "saltelli": (lambda: uqef.simulation.SaltelliSimulation(
+                    self.solver,
+                    self.args.mc_numevaluations,
+                    self.args.sc_p_order,
+                    self.args.sampling_rule,
+                    self.args.regression,
+                    self.args.sc_poly_normed,
+                    self.args.sc_poly_rule,
+                    cross_truncation=self.args.cross_truncation))
+                , "ensemble": (lambda: uqef.simulation.EnsembleSimulation(self.solver))
             }
             self.simulation = simulations[self.args.uq_method]()
 
@@ -295,13 +367,24 @@ class UQsim(object):
 
             print("initialise simulation...")
 
-            self.simulation.generateSimulationNodes(self.simulationNodes)
+            if self.args.read_nodes_from_file:
+                self.simulation.generateSimulationNodes(
+                    self.simulationNodes,
+                    self.args.read_nodes_from_file,
+                    self.args.parameters_file,
+                    self.args.parameters_setup_file
+                )
+            else:
+                self.simulation.generateSimulationNodes(self.simulationNodes)
+
+            #self.simulation.saveParametersToFile(self.args.outputResultDir + "/simulation_parameters")
+
             print("")
             print("Nodes setup:")
             print(self.simulationNodes.printNodesSetup())
-            print("")
-            print("Nodes:")
-            print(self.simulationNodes.printNodes())
+            # print("")
+            # print("Nodes:")
+            # print(self.simulationNodes.printNodes())
 
     def setup_runtime_estimator(self):
         if self.is_master():
@@ -343,8 +426,10 @@ class UQsim(object):
             # strategy  = uqef.schedule.Strategy.DYNAMIC
 
             if self.is_master():
-                print("Opt algorithm: {}".format(list(uqef.schedule.Algorithms.keys())[list(uqef.schedule.Algorithms.values()).index(algorithm)]))
-                print("Opt strategy: {}".format(list(uqef.schedule.Strategies.keys())[list(uqef.schedule.Strategies.values()).index(strategy)]))
+                print("Opt algorithm: {}".format(
+                    list(uqef.schedule.Algorithms.keys())[list(uqef.schedule.Algorithms.values()).index(algorithm)]))
+                print("Opt strategy: {}".format(
+                    list(uqef.schedule.Strategies.keys())[list(uqef.schedule.Strategies.values()).index(strategy)]))
                 sys.stdout.flush()
 
             # do the solving => the propagation
@@ -361,21 +446,57 @@ class UQsim(object):
                 print("solver time: {} sec".format(solver_time))
                 sys.stdout.flush()
 
-    def calc_statistics(self, **kwargs):
-        if self.is_master() and (self.args.disable_statistics is False and self.args.disable_recalc_statistics is False):
-            self.statistic = self.statistics[self.args.model]()
-            print("calculate statistics [{}]...".format(type(self.statistic).__name__))
-            self.simulation.calculateStatistics(self.statistic, self.simulationNodes, self.runtime_estimator, **kwargs)
+    def prepare_statistics(self, **kwargs):
+        if self.args.disable_statistics is False:
+            if self.args.mpi is True and self.args.parallel_statistics is True:
+                # when parallel_statistics is set to True, eche process should have a Statistics object
+                print("create statistics object for the [{}] model...".format(self.args.model))
+                self.statistic = self.statistics[self.args.model]()
+                if self.is_master():
+                    self.simulation.prepareStatistic(self.statistic, self.simulationNodes)
+                    print("preparing statistics [{}]...".format(type(self.statistic).__name__))
+            else:
+                if self.is_master():
+                    print("create statistics object for the [{}] model".format(self.args.model))
+                    self.statistic = self.statistics[self.args.model]()
+                    self.simulation.prepareStatistic(self.statistic, self.simulationNodes)
+                    print("preparing statistics [{}]...".format(type(self.statistic).__name__))
 
-            if self.args.analyse_runtime is True and self.args.model == "runtime":
-                self.runtime_statistic = self.statistic
-            elif self.args.analyse_runtime is True:
-                self.runtime_statistic = self.statistics["runtime"]()
-                print("calculate statistics [{}]...".format(type(self.runtime_statistic).__name__))
-                self.simulation.calculateStatistics(self.runtime_statistic, self.simulationNodes, self.runtime_estimator, **kwargs)
+    def calc_statistics(self, **kwargs):
+        if self.statistic is None:
+            self.prepare_statistics()
+        if self.args.disable_statistics is False and self.args.disable_calc_statistics \
+                is False and self.args.disable_recalc_statistics is False:
+            if self.args.mpi is True and self.args.parallel_statistics is True:
+                if self.is_master():
+                    print("calculate statistics [{}]...".format(type(self.statistic).__name__))
+                calculateStatistics = {
+                    "mc"       : (lambda: self.statistic.calcStatisticsForMcParallel(
+                        chunksize=self.args.chunksize))
+                    ,"sc"      : (lambda: self.statistic.calcStatisticsForScParallel(
+                        chunksize=self.args.chunksize))
+                    ,"saltelli": (lambda: self.statistic.calcStatisticsForMcSaltelliParallel(
+                        chunksize=self.args.chunksize))
+                    ,"ensemble": (lambda: self.statistic.calcStatisticsForEnsembleParallel(
+                        chunksize=self.args.chunksize))
+                }
+                calculateStatistics[self.args.uq_method]()
+            elif self.is_master():
+                print("calculate statistics [{}]...".format(type(self.statistic).__name__))
+                self.simulation.calculateStatistics(
+                    self.statistic, self.simulationNodes, self.runtime_estimator, **kwargs)
+
+            if self.is_master():
+                if self.args.analyse_runtime is True and self.args.model == "runtime":
+                    self.runtime_statistic = self.statistic
+                elif self.args.analyse_runtime is True:
+                    self.runtime_statistic = self.statistics["runtime"]()
+                    print("calculate statistics [{}]...".format(type(self.runtime_statistic).__name__))
+                    self.simulation.calculateStatistics(
+                        self.runtime_statistic, self.simulationNodes, self.runtime_estimator, **kwargs)
 
     def print_statistics(self, **kwargs):
-        if self.is_master() and self.args.disable_statistics is False:
+        if self.is_master() and (self.args.disable_statistics is False or self.args.disable_calc_statistics):
             print("print statistics...")
             print(self.statistic.printResults(**kwargs))
 
@@ -383,27 +504,31 @@ class UQsim(object):
                 print(self.runtime_statistic.printResults(**kwargs))
 
     def plot_nodes(self, display=False, **kwargs):
-        if self.is_master() and self.args.disable_statistics is False:
+        if self.is_master() and (self.args.disable_statistics is False or self.args.disable_calc_statistics):
             print("generate node plots...")
             fileName = self.simulation.name
             self.simulationNodes.plotDists(fileName=fileName, directory=self.args.outputResultDir, display=display)
 
     def plot_statistics(self, display=False, **kwargs):
-        if self.is_master() and self.args.disable_statistics is False:
+        if self.is_master() and (self.args.disable_statistics is False or self.args.disable_calc_statistics):
             print("generate stat plots...")
             fileName = self.simulation.name
-            self.statistic.plotResults(fileName=fileName, directory=self.args.outputResultDir, display=display, **kwargs)
+            self.statistic.plotResults(display=display, fileName=fileName, directory=self.args.outputResultDir,
+                                       **kwargs)
 
             if self.args.analyse_runtime is True and self.args.model != "runtime":
-                self.runtime_statistic.plotResults(fileName=fileName, directory=self.args.outputResultDir, display=display, **kwargs)
+                self.runtime_statistic.plotResults(display=display, fileName=fileName,
+                                                   directory=self.args.outputResultDir, **kwargs)
 
     def plot_animations(self, timesteps, display=False, **kwargs):
-        if self.is_master() and self.args.disable_statistics is False:
+        if self.is_master() and (self.args.disable_statistics is False or self.args.disable_calc_statistics):
             print("generate stat animations...")
             fileName = self.simulation.name
-            self.statistic.plotAnimation(timesteps, fileName=fileName, directory=self.args.outputResultDir, display=display, **kwargs)
+            self.statistic.plotAnimation(
+                timesteps, fileName=fileName, directory=self.args.outputResultDir, display=display, **kwargs)
             if self.args.analyse_runtime is True and self.args.model != "runtime":
-                self.runtime_statistic.plotAnimation(timesteps, fileName=fileName, directory=self.args.outputResultDir, display=display, **kwargs)
+                self.runtime_statistic.plotAnimation(
+                    timesteps, fileName=fileName, directory=self.args.outputResultDir, display=display, **kwargs)
 
     def save_simulationNodes(self, fileName=None):
         if self.is_master():
@@ -413,13 +538,15 @@ class UQsim(object):
             self.simulationNodes.saveToFile(self.args.outputResultDir + "/" + fileName)
 
     def save_statistics(self, **kwargs):
-        if self.is_master() and self.args.disable_statistics is False:
+        if self.is_master() and (self.args.disable_statistics is False or self.args.disable_calc_statistics):
             print("save statistics...")
+
             fileName=None
             if 'fileName' in kwargs:
                 fileName = kwargs.get('fileName')
             if fileName is None:
                 fileName = self.simulation.name
+
             self.statistic.saveToFile(fileName=fileName, directory=self.args.outputResultDir, **kwargs)
             # self.statistics.saveAsNetCdf(timesteps=statistics.timesteps, fileName=fileName, directory=outputResultDir)
             # self.statistics.printCsv(fileName=fileName, directory=outputResultDir)
@@ -438,6 +565,16 @@ class UQsim(object):
             if fileName is None:
                 fileName = self.simulation.name
             self.simulation.saveToFile(self.args.outputResultDir + "/" + fileName)
+
+    def save_simulation_parameters(self, fileName=None):
+        if self.is_master():
+            print("save simulation...")
+            if fileName is None:
+                fileName = "simulation_parameters"
+            self.simulation.saveParametersToFile(self.args.outputResultDir + "/" + fileName)
+
+    def get_simulation_parameters_shape(self):
+        return self.simulation.get_simulation_parameters_shape()
 
     def tear_down(self):
         if self.is_master():

@@ -21,7 +21,7 @@ class Model(object):
         pass
 
     @abstractmethod
-    def prepare(self):
+    def prepare(self, *args, **kwargs):
         raise NotImplementedError("Should have implemented this")
 
     @abstractmethod
@@ -33,7 +33,7 @@ class Model(object):
         raise NotImplementedError("Should have implemented this")
 
     @abstractmethod
-    def run(self, i_s, parameters):
+    def run(self, i_s, parameters, *args, **kwargs):
         raise NotImplementedError("Should have implemented this")
 
     @abstractmethod

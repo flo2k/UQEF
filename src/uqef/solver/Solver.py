@@ -24,7 +24,7 @@ class Solver(object):
 
     def __init__(self):
         self.results = np.array([])
-        self.timesteps = np.array([])
+        self._timesteps = np.array([])
 
         self.solverTimes = SolverTimes()
         pass
@@ -56,6 +56,10 @@ class Solver(object):
 
     @abstractmethod
     def _normaliseParameters(self, parameters):
+        raise NotImplementedError("Should have implemented this")
+
+    @abstractmethod
+    def timesteps(self):
         raise NotImplementedError("Should have implemented this")
 
     def _estimateWorkRuntime(self, work_parameters, runtime_estimator):

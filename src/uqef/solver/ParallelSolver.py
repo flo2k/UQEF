@@ -45,7 +45,7 @@ class ParallelSolver(Solver):
         self.solverTimes.num_work_packages = 1
         self.solverTimes.parallel_solvers_per_work_package = np.array([self.numCores])
 
-        self.infoModel = model_generator()
+        self.info_model = model_generator()
         
     def getSetup(self):
         return "%s using %d cores" % (type(self).__name__, self.numCores)
@@ -58,7 +58,7 @@ class ParallelSolver(Solver):
 
     def prepare(self, parameters):
         self.parameters = parameters
-        self.infoModel.prepare()
+        self.info_model.prepare(info_model=True)
 
     def solve(self, runtime_estimator=None, chunksize=1,
               algorithm=schedule.Algorithm.FCFS, strategy=schedule.Strategy.DYNAMIC):
@@ -190,19 +190,23 @@ class ParallelSolver(Solver):
 
         #remember results
         self.results = results
-        self.timesteps = self.infoModel.timesteps()
+        # self._timesteps = self.info_model.timesteps()
 
     def _assertParameters(self, parameters):
         for parameter in parameters:
-            self.infoModel.assertParameter(parameter)
+            self.info_model.assertParameter(parameter)
 
     def _normaliseParameters(self, parameters):
         norm_paras = []
         for parameter in parameters:
-            norm_para = self.infoModel.normaliseParameter(parameter)
+            norm_para = self.info_model.normaliseParameter(parameter)
             norm_paras.append(norm_para)
 
         return np.array(norm_paras)
+
+    def timesteps(self):
+        self._timesteps = self.info_model.timesteps()
+        return self._timesteps
 
     def estimate_TProp(self, runtime_estimator=None, chunksize=1):
         pass

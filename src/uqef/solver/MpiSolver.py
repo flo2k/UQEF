@@ -56,12 +56,13 @@ class MpiSolver(Solver):
         self.normaliseParams = normaliseParams
         self.combinedParallel = combinedParallel
 
-        self.infoModel = model_generator()
-
         self.size = MPI.COMM_WORLD.Get_size()
         self.rank = MPI.COMM_WORLD.Get_rank()
         self.name = MPI.Get_processor_name()
         self.version = MPI.Get_library_version()
+
+        if self.rank == 0:
+            self.info_model = model_generator()
 
         self.numCores = num_cores
         print("rank {} uses numCores: {}".format(self.rank, self.numCores))
@@ -80,7 +81,8 @@ class MpiSolver(Solver):
 
     def prepare(self, parameters):
         self.parameters = parameters
-        self.infoModel.prepare()
+        if self.rank == 0:
+            self.info_model.prepare(info_model=True)
 
     def solve(self, runtime_estimator=None, chunksize=1,
               algorithm=schedule.Algorithm.FCFS, strategy=schedule.Strategy.FIXED_LINEAR):
@@ -187,7 +189,7 @@ class MpiSolver(Solver):
             self.results = results
             #print "results: " + str(np.array(results, dtype=object).shape)
             #print "results: " + str(self.results)
-            self.timesteps = self.infoModel.timesteps()
+            # self._timesteps = self.info_model.timesteps()
 
         if self.rank == 0:
             #scatter_time = scatter_time_end - scatter_time_start
@@ -197,7 +199,7 @@ class MpiSolver(Solver):
 
             solver_time = solver_time_end - solver_time_start
             #solver_time -= self.solverTimes.T_C
-            print("xx solver_time: {}".format(solver_time))
+            print("solver_time: {}".format(solver_time))
             sys.stdout.flush()
 
             self.solverTimes.T_i_S = np.array(runtimes)
@@ -224,12 +226,12 @@ class MpiSolver(Solver):
 
     def _assertParameters(self, parameters):
         for parameter in parameters:
-            self.infoModel.assertParameter(parameter)
+            self.info_model.assertParameter(parameter)
 
     def _normaliseParameters(self, parameters):
         norm_paras = []
         for parameter in parameters:
-            norm_para = self.infoModel.normaliseParameter(parameter)
+            norm_para = self.info_model.normaliseParameter(parameter)
             norm_paras.append(norm_para)
 
         return np.array(norm_paras)
@@ -238,4 +240,5 @@ class MpiSolver(Solver):
         pass
 
     def timesteps(self):
-        self.infoModel.timesteps()
+        self._timesteps = self.info_model.timesteps()
+        return self._timesteps

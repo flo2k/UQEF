@@ -94,6 +94,23 @@ class RuntimeStatistics(Statistics):
         # real runtime
         self.real_runtime = samples.runtime.copy()
 
+    def calcStatisticsForMcSaltelli(self, rawSamples, timesteps,
+                                    simulationNodes, numEvaluations, order, regression, solverTimes,
+                                    work_package_indexes, original_runtime_estimator, 
+                                    *args, **kwargs):
+        self.calcStatisticsForMc(
+            rawSamples=rawSamples, timesteps=timesteps, simulationNodes=simulationNodes, 
+            numEvaluations=numEvaluations, order=order, regression=regression, solverTimes=solverTimes,
+            work_package_indexes=work_package_indexes, original_runtime_estimator=original_runtime_estimator, *args, **kwargs)
+
+    def calcStatisticsForEnsemble(self, rawSamples, timesteps, simulationNodes, numEvaluations, solverTimes,
+                                  work_package_indexes, original_runtime_estimator=None, *args, **kwargs):
+        self.calcStatisticsForMc(
+            rawSamples=rawSamples, timesteps=timesteps, simulationNodes=simulationNodes, 
+            numEvaluations=numEvaluations, order=None, regression=False, solverTimes=solverTimes, 
+            work_package_indexes=work_package_indexes, original_runtime_estimator=original_runtime_estimator, *args, **kwargs
+            )
+
     def calcStatisticsForSc(self, rawSamples, timesteps,
                             simulationNodes, order, regression, poly_normed, poly_rule,
                             solverTimes, work_package_indexes, original_runtime_estimator=None,
@@ -235,7 +252,7 @@ class RuntimeStatistics(Statistics):
 
         self.Sobol_t_runtime = cp.Sens_t(self.GPCe_runtime, dist)
 
-    def calcStatisticsForSaltelli(self, rawSamples, timesteps,
+    def calcStatisticsForMcSaltelli(self, rawSamples, timesteps,
                             simulationNodes, numEvaluations, order, regression, solverTimes,
                             work_package_indexes, original_runtime_estimator=None,
                             *args, **kwargs):

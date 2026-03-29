@@ -21,7 +21,7 @@ class TestModel(Model):
 
         self.t = range(1, 2)
 
-    def prepare(self):
+    def prepare(self, *args, **kwargs):
         pass
 
     def assertParameter(self, parameter):
